@@ -1,17 +1,24 @@
-import { useState, useRef, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { motion } from 'framer-motion';
-import { RootState } from '@/store/store';
-import { toggleTheme } from '@/store/slices/themeSlice';
-import { setUser } from '@/store/slices/authSlice';
-import { LayoutRouter } from '@/components/layout/LayoutRouter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useRef, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { motion } from "framer-motion";
+import { RootState } from "@/store/store";
+import { toggleTheme } from "@/store/slices/themeSlice";
+import { setUser } from "@/store/slices/authSlice";
+import { useGetSignedUserQuery } from "@/store/services/authApi";
+import { LayoutRouter } from "@/components/layout/LayoutRouter";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -19,39 +26,127 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Moon, Sun, User, Crown, Users, Shield, CheckCircle2, Star, Edit, Save, X, Upload, Image as ImageIcon } from 'lucide-react';
-import { toast } from 'sonner';
- 
+} from "@/components/ui/dialog";
+import {
+  Moon,
+  Sun,
+  User,
+  Crown,
+  Users,
+  Shield,
+  CheckCircle2,
+  Star,
+  Edit,
+  Save,
+  X,
+  Upload,
+  Image as ImageIcon,
+} from "lucide-react";
+import { toast } from "sonner";
+
 const Profile = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user: reduxUser } = useSelector((state: RootState) => state.auth);
   const { mode } = useSelector((state: RootState) => state.theme);
+  const {
+    data: signedUserData,
+    isLoading,
+    error,
+    refetch,
+  } = useGetSignedUserQuery();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editUsername, setEditUsername] = useState(user?.username || '');
-  const [profileImage, setProfileImage] = useState<string | null>(
-    localStorage.getItem(`profile_image_${user?.id}`) || null
-  );
-  const [previewImage, setPreviewImage] = useState<string | null>(profileImage);
+  const [editUsername, setEditUsername] = useState("");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Transform API user data to match Redux User interface
+  const user = signedUserData
+    ? {
+        id: signedUserData._id || reduxUser?.id || "",
+        username:
+          signedUserData.userName ||
+          signedUserData.name ||
+          reduxUser?.username ||
+          "",
+        role: signedUserData.role || reduxUser?.role || "User",
+        allowed_categories:
+          signedUserData.allowed_categories ||
+          reduxUser?.allowed_categories ||
+          [],
+        name:
+          signedUserData.name ||
+          signedUserData.userName ||
+          reduxUser?.name ||
+          "",
+        email: signedUserData.email || reduxUser?.email || "",
+        avatar: signedUserData.avatar || reduxUser?.avatar || "",
+      }
+    : reduxUser;
+
+  // Update Redux state when API data is fetched
+  useEffect(() => {
+    if (signedUserData) {
+      const transformedUser = {
+        id: signedUserData._id || reduxUser?.id || "",
+        username:
+          signedUserData.userName ||
+          signedUserData.name ||
+          reduxUser?.username ||
+          "",
+        role: signedUserData.role || reduxUser?.role || "User",
+        allowed_categories:
+          signedUserData.allowed_categories ||
+          reduxUser?.allowed_categories ||
+          [],
+        name:
+          signedUserData.name ||
+          signedUserData.userName ||
+          reduxUser?.name ||
+          "",
+        email: signedUserData.email || reduxUser?.email || "",
+        avatar: signedUserData.avatar || reduxUser?.avatar || "",
+      };
+      dispatch(setUser(transformedUser));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedUserData?._id]);
+
+  // Initialize edit username and profile image from user data
+  useEffect(() => {
+    if (user?.username) {
+      setEditUsername(user.username);
+    }
+    if (user?.id) {
+      const savedImage = localStorage.getItem(`profile_image_${user.id}`);
+      if (savedImage) {
+        setProfileImage(savedImage);
+        setPreviewImage(savedImage);
+      }
+    }
+  }, [user?.username, user?.id]);
 
   // Get avatar URL from localStorage or use default
   const getAvatarUrl = () => {
-    return profileImage || localStorage.getItem(`profile_image_${user?.id}`) || null;
+    return (
+      profileImage ||
+      (user?.id ? localStorage.getItem(`profile_image_${user.id}`) : null) ||
+      null
+    );
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select a valid image file');
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image file");
         return;
       }
-      
+
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
+        toast.error("Image size should be less than 5MB");
         return;
       }
 
@@ -70,7 +165,7 @@ const Profile = () => {
     setPreviewImage(null);
     setProfileImage(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -88,76 +183,98 @@ const Profile = () => {
         ...user,
         username: editUsername.trim(),
       };
-      
+
       // Update Redux state first
       dispatch(setUser(updatedUser));
-      
+
       // Also update localStorage to persist the change
-      localStorage.setItem('crm_user', JSON.stringify(updatedUser));
-      
+      localStorage.setItem("crm_user", JSON.stringify(updatedUser));
+
       // Force header update by triggering a custom event
       // This ensures the header updates immediately with the new username
       setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('profileUpdated', { 
-          detail: { username: editUsername.trim() } 
-        }));
+        window.dispatchEvent(
+          new CustomEvent("profileUpdated", {
+            detail: { username: editUsername.trim() },
+          })
+        );
       }, 0);
     }
 
-    toast.success('Profile updated successfully!');
+    toast.success("Profile updated successfully!");
     setIsEditDialogOpen(false);
   };
-
-  // Load image from localStorage on mount
-  useEffect(() => {
-    const savedImage = localStorage.getItem(`profile_image_${user?.id}`);
-    if (savedImage) {
-      setProfileImage(savedImage);
-      setPreviewImage(savedImage);
-    }
-  }, [user?.id]);
-
-  // Update editUsername when user changes from Redux
-  useEffect(() => {
-    if (user?.username) {
-      setEditUsername(user.username);
-    }
-  }, [user?.username]);
 
   // Listen for profile updates
   useEffect(() => {
     const handleProfileUpdate = () => {
-      const savedImage = localStorage.getItem(`profile_image_${user?.id}`);
-      if (savedImage) {
-        setProfileImage(savedImage);
-        setPreviewImage(savedImage);
+      if (user?.id) {
+        const savedImage = localStorage.getItem(`profile_image_${user.id}`);
+        if (savedImage) {
+          setProfileImage(savedImage);
+          setPreviewImage(savedImage);
+        }
       }
+      // Refetch user data after profile update
+      refetch();
     };
-    window.addEventListener('profileUpdated', handleProfileUpdate);
-    return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
-  }, [user?.id]);
- 
+    window.addEventListener("profileUpdated", handleProfileUpdate);
+    return () =>
+      window.removeEventListener("profileUpdated", handleProfileUpdate);
+  }, [user?.id, refetch]);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <LayoutRouter>
+        <div className="space-y-6 w-full">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading profile...</p>
+            </div>
+          </div>
+        </div>
+      </LayoutRouter>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <LayoutRouter>
+        <div className="space-y-6 w-full">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <p className="text-destructive mb-4">
+                Failed to load profile data
+              </p>
+              <Button onClick={() => refetch()} variant="outline">
+                Retry
+              </Button>
+            </div>
+          </div>
+        </div>
+      </LayoutRouter>
+    );
+  }
+
+  // Show message if no user data
+  if (!user) {
+    return (
+      <LayoutRouter>
+        <div className="space-y-6 w-full">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <p className="text-muted-foreground">No user data available</p>
+          </div>
+        </div>
+      </LayoutRouter>
+    );
+  }
+
   return (
     <LayoutRouter>
       <div className="space-y-6 w-full">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-secondary/10 rounded-2xl blur-3xl -z-10" />
-          <div className="relative border border-border/50 rounded-xl p-6 bg-card/50 backdrop-blur-sm shadow-sm">
-            <h1 className="text-3xl font-semibold text-foreground mb-2">
-              Profile
-            </h1>
-            <p className="text-muted-foreground text-base">
-              Manage your account settings and preferences
-            </p>
-          </div>
-        </motion.div>
- 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -187,7 +304,7 @@ const Profile = () => {
             <CardContent className="space-y-6 p-6">
               <div className="relative overflow-hidden rounded-lg border border-border/30 bg-muted/30 p-6">
                 {/* Role-specific background glow */}
-                {user?.role === 'Admin' && (
+                {user?.role === "Admin" && (
                   <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"
                     animate={{
@@ -200,7 +317,7 @@ const Profile = () => {
                     }}
                   />
                 )}
-                {user?.role === 'HR' && (
+                {user?.role === "HR" && (
                   <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-teal-600/20 via-cyan-600/20 to-blue-600/20"
                     animate={{
@@ -213,7 +330,7 @@ const Profile = () => {
                     }}
                   />
                 )}
-                {user?.role === 'User' && (
+                {user?.role === "User" && (
                   <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-pink-600/20 via-rose-600/20 to-orange-600/20"
                     animate={{
@@ -230,24 +347,30 @@ const Profile = () => {
                 <div className="relative flex items-center gap-6">
                   <div className="relative">
                     <div className="relative group">
-                      <Avatar className="h-20 w-20 border-2 shadow-md relative z-10"
+                      <Avatar
+                        className="h-20 w-20 border-2 shadow-md relative z-10"
                         style={{
-                          borderColor: user?.role === 'Admin' 
-                            ? 'rgba(59, 130, 246, 0.3)' 
-                            : user?.role === 'HR'
-                            ? 'rgba(20, 184, 166, 0.3)'
-                            : 'rgba(236, 72, 153, 0.3)'
+                          borderColor:
+                            user?.role === "Admin"
+                              ? "rgba(59, 130, 246, 0.3)"
+                              : user?.role === "HR"
+                              ? "rgba(20, 184, 166, 0.3)"
+                              : "rgba(236, 72, 153, 0.3)",
                         }}
                       >
-                        <AvatarImage src={getAvatarUrl() || undefined} alt={user?.username} />
-                        <AvatarFallback 
+                        <AvatarImage
+                          src={getAvatarUrl() || undefined}
+                          alt={user?.username}
+                        />
+                        <AvatarFallback
                           className="text-white text-2xl font-semibold relative z-10"
                           style={{
-                            background: user?.role === 'Admin'
-                              ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%)'
-                              : user?.role === 'HR'
-                              ? 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)'
-                              : 'linear-gradient(135deg, #ec4899 0%, #f97316 100%)'
+                            background:
+                              user?.role === "Admin"
+                                ? "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%)"
+                                : user?.role === "HR"
+                                ? "linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)"
+                                : "linear-gradient(135deg, #ec4899 0%, #f97316 100%)",
                           }}
                         >
                           {user?.username?.charAt(0).toUpperCase()}
@@ -270,7 +393,7 @@ const Profile = () => {
                       />
                     </div>
                     {/* Role icon overlay */}
-                    {user?.role === 'Admin' && (
+                    {user?.role === "Admin" && (
                       <motion.div
                         className="absolute -top-2 -right-2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 shadow-lg border-2 border-white"
                         animate={{
@@ -286,7 +409,7 @@ const Profile = () => {
                         <Crown className="h-5 w-5 text-white" />
                       </motion.div>
                     )}
-                    {user?.role === 'HR' && (
+                    {user?.role === "HR" && (
                       <motion.div
                         className="absolute -top-2 -right-2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-500 shadow-lg border-2 border-white"
                         animate={{
@@ -302,7 +425,7 @@ const Profile = () => {
                         <Users className="h-5 w-5 text-white" />
                       </motion.div>
                     )}
-                    {user?.role === 'User' && (
+                    {user?.role === "User" && (
                       <motion.div
                         className="absolute -top-2 -right-2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-500 shadow-lg border-2 border-white"
                         animate={{
@@ -318,31 +441,32 @@ const Profile = () => {
                       </motion.div>
                     )}
                   </div>
-                  
+
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h3 className="text-2xl font-semibold text-foreground mb-2">
-                          {user?.username?.charAt(0).toUpperCase() + user?.username?.slice(1)}
+                          {user?.username?.charAt(0).toUpperCase() +
+                            user?.username?.slice(1)}
                         </h3>
                         <p className="text-sm text-muted-foreground mb-3">
-                          {user?.username}@crm.com
+                          {user?.email || `${user?.username}@crm.com`}
                         </p>
                         {/* Role Badge */}
                         <div className="mb-3">
-                          {user?.role === 'Admin' && (
+                          {user?.role === "Admin" && (
                             <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 px-3 py-1 text-xs font-medium flex items-center gap-1.5 w-fit">
                               <Crown className="h-3.5 w-3.5" />
                               <span>Administrator</span>
                             </Badge>
                           )}
-                          {user?.role === 'HR' && (
+                          {user?.role === "HR" && (
                             <Badge className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white border-0 px-3 py-1 text-xs font-medium flex items-center gap-1.5 w-fit">
                               <Users className="h-3.5 w-3.5" />
                               <span>HR Manager</span>
                             </Badge>
                           )}
-                          {user?.role === 'User' && (
+                          {user?.role === "User" && (
                             <Badge className="bg-gradient-to-r from-pink-600 to-rose-600 text-white border-0 px-3 py-1 text-xs font-medium flex items-center gap-1.5 w-fit">
                               <User className="h-3.5 w-3.5" />
                               <span>Standard User</span>
@@ -362,23 +486,30 @@ const Profile = () => {
 
                     {/* Role Description */}
                     <div className="mt-4">
-                      {user?.role === 'Admin' && (
+                      {user?.role === "Admin" && (
                         <div className="flex items-start gap-2 text-sm text-muted-foreground">
                           <CheckCircle2 className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                          <p>Full system access with complete control over users, contacts, and permissions</p>
+                          <p>
+                            Full system access with complete control over users,
+                            contacts, and permissions
+                          </p>
                         </div>
                       )}
-                      {user?.role === 'HR' && (
-                        <p className="text-sm text-muted-foreground">Manage HR-related contacts and employee information</p>
+                      {user?.role === "HR" && (
+                        <p className="text-sm text-muted-foreground">
+                          Manage HR-related contacts and employee information
+                        </p>
                       )}
-                      {user?.role === 'User' && (
-                        <p className="text-sm text-muted-foreground">Access to public contacts and basic features</p>
+                      {user?.role === "User" && (
+                        <p className="text-sm text-muted-foreground">
+                          Access to public contacts and basic features
+                        </p>
                       )}
                     </div>
                   </div>
                 </div>
               </div>
- 
+
               <div className="grid gap-4 md:grid-cols-2">
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
@@ -386,8 +517,12 @@ const Profile = () => {
                   transition={{ delay: 0.1 }}
                   className="p-4 rounded-lg border border-border/30 bg-muted/20 hover:bg-muted/40 transition-colors"
                 >
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Username</p>
-                  <p className="text-lg font-semibold text-foreground">{user?.username}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                    Username
+                  </p>
+                  <p className="text-lg font-semibold text-foreground">
+                    {user?.username}
+                  </p>
                 </motion.div>
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
@@ -395,12 +530,22 @@ const Profile = () => {
                   transition={{ delay: 0.2 }}
                   className="p-4 rounded-lg border border-border/30 bg-muted/20 hover:bg-muted/40 transition-colors"
                 >
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Role</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                    Role
+                  </p>
                   <div className="flex items-center gap-2">
-                    {user?.role === 'Admin' && <Crown className="h-4 w-4 text-yellow-500" />}
-                    {user?.role === 'HR' && <Users className="h-4 w-4 text-cyan-500" />}
-                    {user?.role === 'User' && <User className="h-4 w-4 text-pink-500" />}
-                    <p className="text-lg font-semibold text-foreground">{user?.role}</p>
+                    {user?.role === "Admin" && (
+                      <Crown className="h-4 w-4 text-yellow-500" />
+                    )}
+                    {user?.role === "HR" && (
+                      <Users className="h-4 w-4 text-cyan-500" />
+                    )}
+                    {user?.role === "User" && (
+                      <User className="h-4 w-4 text-pink-500" />
+                    )}
+                    <p className="text-lg font-semibold text-foreground">
+                      {user?.role}
+                    </p>
                   </div>
                 </motion.div>
                 <motion.div
@@ -409,9 +554,11 @@ const Profile = () => {
                   transition={{ delay: 0.3 }}
                   className="md:col-span-2 p-4 rounded-lg border border-border/30 bg-muted/20"
                 >
-                  <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Allowed Categories</p>
+                  <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Allowed Categories
+                  </p>
                   <div className="flex flex-wrap gap-2">
-                    {user?.allowed_categories.map(category => (
+                    {user?.allowed_categories.map((category) => (
                       <Badge
                         key={category}
                         variant="secondary"
@@ -426,7 +573,7 @@ const Profile = () => {
             </CardContent>
           </Card>
         </motion.div>
- 
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -445,22 +592,27 @@ const Profile = () => {
               <div className="flex items-center justify-between p-4 rounded-lg border border-border/30 bg-muted/20 hover:bg-muted/40 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted border border-border">
-                    {mode === 'light' ? (
+                    {mode === "light" ? (
                       <Sun className="h-5 w-5 text-foreground" />
                     ) : (
                       <Moon className="h-5 w-5 text-foreground" />
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="theme-toggle" className="cursor-pointer text-base font-medium">
+                    <Label
+                      htmlFor="theme-toggle"
+                      className="cursor-pointer text-base font-medium"
+                    >
                       Dark Mode
                     </Label>
-                    <p className="text-sm text-muted-foreground">Switch between light and dark theme</p>
+                    <p className="text-sm text-muted-foreground">
+                      Switch between light and dark theme
+                    </p>
                   </div>
                 </div>
                 <Switch
                   id="theme-toggle"
-                  checked={mode === 'dark'}
+                  checked={mode === "dark"}
                   onCheckedChange={() => dispatch(toggleTheme())}
                 />
               </div>
@@ -477,7 +629,8 @@ const Profile = () => {
                 Edit Profile
               </DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
-                Update your profile information. Note: Role and categories can only be changed by administrators.
+                Update your profile information. Note: Role and categories can
+                only be changed by administrators.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-5 py-4">
@@ -487,7 +640,10 @@ const Profile = () => {
                 <div className="flex items-center gap-4">
                   <div className="relative">
                     <Avatar className="h-16 w-16 border border-border">
-                      <AvatarImage src={previewImage || undefined} alt="Preview" />
+                      <AvatarImage
+                        src={previewImage || undefined}
+                        alt="Preview"
+                      />
                       <AvatarFallback className="bg-muted">
                         <ImageIcon className="h-6 w-6" />
                       </AvatarFallback>
@@ -510,7 +666,7 @@ const Profile = () => {
                       size="sm"
                     >
                       <Upload className="mr-2 h-4 w-4" />
-                      {previewImage ? 'Change Image' : 'Upload Image'}
+                      {previewImage ? "Change Image" : "Upload Image"}
                     </Button>
                     <input
                       ref={fileInputRef}
@@ -527,7 +683,9 @@ const Profile = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-username" className="text-sm font-medium">Username</Label>
+                <Label htmlFor="edit-username" className="text-sm font-medium">
+                  Username
+                </Label>
                 <Input
                   id="edit-username"
                   value={editUsername}
@@ -539,9 +697,15 @@ const Profile = () => {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Role</Label>
                 <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/30">
-                  {user?.role === 'Admin' && <Crown className="h-4 w-4 text-yellow-500" />}
-                  {user?.role === 'HR' && <Users className="h-4 w-4 text-cyan-500" />}
-                  {user?.role === 'User' && <User className="h-4 w-4 text-pink-500" />}
+                  {user?.role === "Admin" && (
+                    <Crown className="h-4 w-4 text-yellow-500" />
+                  )}
+                  {user?.role === "HR" && (
+                    <Users className="h-4 w-4 text-cyan-500" />
+                  )}
+                  {user?.role === "User" && (
+                    <User className="h-4 w-4 text-pink-500" />
+                  )}
                   <span className="font-medium text-sm">{user?.role}</span>
                   <Badge variant="outline" className="ml-auto text-xs">
                     Read-only
@@ -549,10 +713,12 @@ const Profile = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Allowed Categories</Label>
+                <Label className="text-sm font-medium">
+                  Allowed Categories
+                </Label>
                 <div className="p-3 rounded-lg border border-border bg-muted/30">
                   <div className="flex flex-wrap gap-2">
-                    {user?.allowed_categories.map(category => (
+                    {user?.allowed_categories.map((category) => (
                       <Badge
                         key={category}
                         variant="secondary"
@@ -573,7 +739,7 @@ const Profile = () => {
                 variant="outline"
                 onClick={() => {
                   setIsEditDialogOpen(false);
-                  setEditUsername(user?.username || '');
+                  setEditUsername(user?.username || "");
                   setPreviewImage(profileImage);
                 }}
                 size="sm"
@@ -581,10 +747,7 @@ const Profile = () => {
                 <X className="mr-2 h-4 w-4" />
                 Cancel
               </Button>
-              <Button
-                onClick={handleSaveProfile}
-                size="sm"
-              >
+              <Button onClick={handleSaveProfile} size="sm">
                 <Save className="mr-2 h-4 w-4" />
                 Save Changes
               </Button>
@@ -595,5 +758,5 @@ const Profile = () => {
     </LayoutRouter>
   );
 };
- 
+
 export default Profile;

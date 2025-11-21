@@ -434,6 +434,21 @@ const AdminUsers = () => {
     }
   };
 
+  // Get user initials for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Get avatar gradient - matching sidemenu gradient
+  const getAvatarGradient = (role: string) => {
+    return "bg-gradient-to-br from-primary to-secondary";
+  };
+
   if (isLoading) {
     return (
       <LayoutRouter>
@@ -547,87 +562,145 @@ const AdminUsers = () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredUsers.map((user, index) => (
-            <motion.div
-              key={user.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Card className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
-                <CardContent
-                  className="p-6"
-                  onClick={() => handleUserCardClick(user)}
-                >
-                  <div className="mb-4 flex items-start justify-between">
-                    <Avatar className="h-14 w-14">
-                      <AvatarFallback className="flex items-center justify-center bg-muted">
-                        {getGenderIcon(user.gender)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(user);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(user);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+          {filteredUsers.map((user, index) => {
+            return (
+              <motion.div
+                key={user.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ y: -4 }}
+              >
+                <Card className="overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm group">
+                  <CardContent
+                    className="p-0"
+                    onClick={() => handleUserCardClick(user)}
+                  >
+                    {/* Header with gradient background */}
+                    <div className="relative h-20 bg-gradient-to-r from-primary/20 via-primary/10 to-secondary/20">
+                      <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+                      <div className="absolute top-4 right-4 flex gap-2 z-20">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 bg-background/95 backdrop-blur-sm hover:bg-background border-border/50 opacity-30 group-hover:opacity-100 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(user);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="h-8 w-8 bg-destructive/95 backdrop-blur-sm hover:bg-destructive border-border/50 opacity-30 group-hover:opacity-100 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(user);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
 
-                  <h3 className="mb-1 text-lg font-semibold">{user.name}</h3>
-                  <p className="mb-3 text-sm text-muted-foreground">
-                    @{user.username}
-                  </p>
+                    {/* Main Content */}
+                    <div className="p-6 -mt-10">
+                      {/* Avatar */}
+                      <div className="relative mb-4">
+                        <Avatar className="h-20 w-20 border-4 border-background shadow-lg ring-2 ring-primary/20">
+                          <AvatarFallback
+                            className={`${getAvatarGradient(
+                              user.role
+                            )} text-white text-xl font-bold`}
+                          >
+                            {getInitials(user.name || user.username)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {user.status === "active" && (
+                          <div className="absolute bottom-0 right-0 h-5 w-5 rounded-full bg-green-500 border-2 border-background flex items-center justify-center shadow-md">
+                            <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                          </div>
+                        )}
+                      </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="truncate">{user.email}</span>
+                      {/* User Info */}
+                      <div className="space-y-3">
+                        <div>
+                          <h3 className="text-xl font-bold text-foreground mb-1">
+                            {user.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <span>@{user.username}</span>
+                          </p>
+                        </div>
+
+                        <div className="space-y-2.5">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Mail className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{user.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <Badge
+                              className={`${getRoleBadgeColor(
+                                user.role
+                              )} text-xs font-medium`}
+                            >
+                              {user.role}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                          <div className="flex items-center gap-2">
+                            {user.status === "active" ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <XCircle className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <Badge
+                              variant={
+                                user.status === "active"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className="text-xs"
+                            >
+                              {user.status}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Last Login */}
+                        <div className="pt-2 border-t border-border/50">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span>
+                              {user.last_login &&
+                              user.last_login.trim() !== "" &&
+                              user.last_login !== "Invalid Date"
+                                ? new Date(user.last_login).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    }
+                                  )
+                                : "Never logged in"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Shield className="h-4 w-4 text-muted-foreground" />
-                      <Badge className={getRoleBadgeColor(user.role)}>
-                        {user.role}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between">
-                    <Badge
-                      variant={
-                        user.status === "active" ? "default" : "secondary"
-                      }
-                    >
-                      {user.status}
-                    </Badge>
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
-                    <p>
-                      Last login: {new Date(user.last_login).toLocaleString()}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Add User Dialog */}
@@ -1240,22 +1313,23 @@ const AdminUsers = () => {
                 <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-primary/10 via-primary/5 to-background border p-6">
                   <div className="flex items-start gap-6">
                     <div className="relative">
-                      <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                      <Avatar className="h-24 w-24 border-4 border-background shadow-lg ring-2 ring-primary/20">
                         <AvatarFallback
-                          className={`flex items-center justify-center text-3xl ${
-                            userDetailData.gender === "Male"
-                              ? "bg-gradient-to-br from-blue-500 to-blue-700 text-white"
-                              : userDetailData.gender === "Female"
-                              ? "bg-gradient-to-br from-pink-500 to-pink-700 text-white"
-                              : "bg-gradient-to-br from-purple-500 to-purple-700 text-white"
-                          }`}
+                          className={`${getAvatarGradient(
+                            userDetailData.role
+                          )} text-white text-3xl font-bold flex items-center justify-center`}
                         >
-                          {getGenderIcon(userDetailData.gender)}
+                          {(userDetailData.name || userDetailData.username)
+                            .split(" ")
+                            .map((n: string) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
                       {userDetailData.status === "active" && (
-                        <div className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-green-500 border-4 border-background flex items-center justify-center">
-                          <CheckCircle2 className="h-3 w-3 text-white" />
+                        <div className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-green-500 border-4 border-background flex items-center justify-center shadow-md">
+                          <div className="h-2.5 w-2.5 rounded-full bg-white" />
                         </div>
                       )}
                     </div>

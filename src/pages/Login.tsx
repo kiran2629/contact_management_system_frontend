@@ -65,6 +65,13 @@ const Login = () => {
         password: data.password,
       }).unwrap();
 
+      // Check if result has the expected structure
+      if (!result || !result.accessToken) {
+        toast.error("Invalid response from server");
+        console.error("Login response:", result);
+        return;
+      }
+
       // Decode JWT token to extract user information
       const decodedToken = decodeJWT(result.accessToken);
 
@@ -133,6 +140,7 @@ const Login = () => {
           navigate("/dashboard");
       }
     } catch (error: any) {
+      console.error("Login error:", error);
       const errorMessage =
         error?.data?.error ||
         error?.data?.message ||

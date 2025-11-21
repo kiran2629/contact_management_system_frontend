@@ -1,5 +1,5 @@
-import { useSelector } from 'react-redux';
-import { RootState } from '../store/store';
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 
 export const usePermissions = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -11,26 +11,46 @@ export const usePermissions = () => {
       canView: () => false,
       canEdit: () => false,
       hasCategory: () => false,
+      hasPermission: () => false,
+    };
+  }
+
+  // Admin has all permissions
+  if (user.role === "Admin") {
+    return {
+      canAccess: () => true,
+      canView: () => true,
+      canEdit: () => true,
+      hasCategory: () => true,
+      hasPermission: () => true,
+      getAllowedCategories: () => user.allowed_categories || [],
     };
   }
 
   const userPermissions = permissions[user.role];
 
   return {
-    canAccess: (action: string) => {
-      return userPermissions.actions[action] === true;
+    canAccess: (category: string, permission: string) => {
+      if (!userPermissions?.permissions?.[category]) return false;
+      return userPermissions.permissions[category][permission] === true;
     },
-    canView: (field: string) => {
-      return userPermissions.fields[`view_${field}`] === true;
+    canView: (category: string) => {
+      if (!userPermissions?.permissions?.[category]) return false;
+      return userPermissions.permissions[category].read === true;
     },
-    canEdit: (field: string) => {
-      return userPermissions.fields[`edit_${field}`] === true;
+    canEdit: (category: string) => {
+      if (!userPermissions?.permissions?.[category]) return false;
+      return userPermissions.permissions[category].update === true;
+    },
+    hasPermission: (category: string, permission: string) => {
+      if (!userPermissions?.permissions?.[category]) return false;
+      return userPermissions.permissions[category][permission] === true;
     },
     hasCategory: (category: string) => {
-      return user.allowed_categories.includes(category);
+      return user.allowed_categories?.includes(category) || false;
     },
     getAllowedCategories: () => {
-      return user.allowed_categories;
+      return user.allowed_categories || [];
     },
   };
 };

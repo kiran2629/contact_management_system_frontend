@@ -1,5 +1,5 @@
-import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import usersData from "@/mock/users.json";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./api";
 
 export interface LoginRequest {
   email: string;
@@ -34,86 +34,80 @@ export interface UserResponse {
   };
 }
 
+export interface SignedUserApiResponse {
+  success: boolean;
+  user: {
+    _id: string;
+    userName: string;
+    email: string;
+    role: "Admin" | "HR" | "User";
+    allowed_categories: string[];
+    name?: string;
+    avatar?: string;
+    isActive?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+    lastLoginAt?: string;
+  };
+}
+
+export interface SignedUserResponse {
+  _id: string;
+  userName: string;
+  email: string;
+  role: "Admin" | "HR" | "User";
+  allowed_categories: string[];
+  name?: string;
+  avatar?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  lastLoginAt?: string;
+}
+
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: fakeBaseQuery(),
+  baseQuery: baseQuery,
   tagTypes: ["Auth"],
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
-      queryFn: async (credentials) => {
-        // Mock authentication logic
-        await new Promise((resolve) => setTimeout(resolve, 800));
-
-        const user = usersData.find(
-          (u) =>
-            u.email === credentials.email &&
-            u.password === credentials.password &&
-            u.status === "active"
-        );
-
-        if (user) {
-          return {
-            data: {
-              success: true,
-              message: "Login successful",
-              accessToken: `mock-jwt-token-${user.id}-${Date.now()}`,
-              refreshToken: `mock-refresh-token-${user.id}-${Date.now()}`,
-              user: {
-                id: parseInt(user.id),
-                username: user.username,
-                role: user.role as "Admin" | "HR" | "User",
-                allowed_categories: user.allowed_categories,
-                name: user.name,
-                email: user.email,
-                avatar: user.avatar,
-              },
-            },
-          };
-        }
-
-        return {
-          error: {
-            status: "CUSTOM_ERROR" as const,
-            error: "Invalid credentials or inactive account",
-          },
-        };
-      },
+      query: (credentials) => ({
+        url: "/v1/api/auth/login",
+        method: "POST",
+        body: credentials,
+      }),
     }),
     logout: builder.mutation<{ success: boolean }, void>({
-      queryFn: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        return { data: { success: true } };
-      },
+      query: () => ({
+        url: "/v1/api/auth/logout",
+        method: "POST",
+      }),
     }),
     getMe: builder.query<UserResponse, void>({
-      queryFn: async () => {
-        const storedUser = localStorage.getItem("crm_user");
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          return {
-            data: {
-              user: {
-                id: user.id,
-                username: user.username,
-                role: user.role as "Admin" | "HR" | "User",
-                allowed_categories: user.allowed_categories,
-                name: user.name,
-                email: user.email,
-                avatar: user.avatar,
-              },
-            },
-          };
-        }
-        return {
-          error: {
-            status: "CUSTOM_ERROR" as const,
-            error: "Not authenticated",
-          },
-        };
+      query: () => ({
+        url: "/v1/api/auth/me",
+        method: "GET",
+      }),
+      providesTags: ["Auth"],
+    }),
+    getSignedUser: builder.query<SignedUserResponse, void>({
+      query: () => ({
+        url: "/v1/api/auth/getSignedUser",
+        method: "GET",
+      }),
+      transformResponse: (
+        response: SignedUserApiResponse
+      ): SignedUserResponse => {
+        return response.user;
       },
       providesTags: ["Auth"],
     }),
   }),
 });
 
-export const { useLoginMutation, useLogoutMutation, useGetMeQuery } = authApi;
+export const {
+  useLoginMutation,
+  useLogoutMutation,
+  useGetMeQuery,
+  useGetSignedUserQuery,
+} = authApi;
