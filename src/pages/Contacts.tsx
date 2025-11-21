@@ -1,14 +1,15 @@
-import { useState, useMemo } from 'react';
-import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { RootState } from '@/store/store';
-import { usePermissions } from '@/hooks/usePermissions';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useMemo } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { RootState } from "@/store/store";
+import { usePermissions } from "@/hooks/usePermissions";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { MultiSelect } from "@/components/form/MultiSelect";
 import {
   Search,
   Plus,
@@ -18,25 +19,72 @@ import {
   Briefcase,
   MapPin,
   ExternalLink,
-} from 'lucide-react';
+  Filter,
+  X,
+} from "lucide-react";
+
+// All available categories
+const ALL_CATEGORIES = [
+  "Public",
+  "HR",
+  "Employee",
+  "Candidate",
+  "Client",
+  "Partner",
+  "Vendor",
+  "Other",
+];
 
 const Contacts = () => {
   const navigate = useNavigate();
   const { contacts } = useSelector((state: RootState) => state.contacts);
   const { user } = useSelector((state: RootState) => state.auth);
   const { canAccess, hasCategory } = usePermissions();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  // Filter categories based on user role
+  const availableCategories = useMemo(() => {
+    if (!user?.role) return [];
+
+    switch (user.role) {
+      case "User":
+        return ["Public"];
+      case "HR":
+        return ["Employee", "Candidate"];
+      case "Admin":
+        return ALL_CATEGORIES;
+      default:
+        return [];
+    }
+  }, [user?.role]);
 
   const filteredContacts = useMemo(() => {
-    return contacts.filter(contact => {
-      const hasAllowedCategory = contact.categories.some(cat => hasCategory(cat));
-      const matchesSearch = contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    return contacts.filter((contact) => {
+      const hasAllowedCategory = contact.categories.some((cat) =>
+        hasCategory(cat)
+      );
+      const matchesSearch =
+        contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         contact.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
         contact.email.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return hasAllowedCategory && matchesSearch;
+      // Filter by selected categories (if any are selected)
+      const matchesCategory =
+        selectedCategories.length === 0 ||
+        contact.categories.some((cat) => selectedCategories.includes(cat));
+
+      return hasAllowedCategory && matchesSearch && matchesCategory;
     });
-  }, [contacts, searchQuery, hasCategory]);
+  }, [contacts, searchQuery, selectedCategories, hasCategory]);
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategories([]);
+  };
+
+  const hasActiveFilters =
+    searchQuery.length > 0 || selectedCategories.length > 0;
 
   return (
     <AppLayout>
@@ -49,23 +97,78 @@ const Contacts = () => {
               Manage your contact relationships
             </p>
           </div>
-          {canAccess('create_contact') && (
-            <Button onClick={() => navigate('/contacts/new')}>
+          {canAccess("create_contact") && (
+            <Button onClick={() => navigate("/contacts/new")}>
               <Plus className="mr-2 h-4 w-4" />
               Add Contact
             </Button>
           )}
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search contacts..."
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        {/* Search and Filters */}
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search contacts..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Filter by Category:</span>
+              </div>
+              <div className="flex-1 max-w-md">
+                <MultiSelect
+                  options={availableCategories}
+                  selected={selectedCategories}
+                  onChange={setSelectedCategories}
+                  placeholder="All categories"
+                />
+              </div>
+            </div>
+
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Clear Filters
+              </Button>
+            )}
+          </div>
+
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Active filters:</span>
+              {selectedCategories.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedCategories.map((category) => (
+                    <Badge
+                      key={category}
+                      variant="secondary"
+                      className="text-xs"
+                    >
+                      {category}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              {searchQuery && (
+                <Badge variant="secondary" className="text-xs">
+                  Search: "{searchQuery}"
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Contacts Grid */}
@@ -92,7 +195,9 @@ const Contacts = () => {
                   </div>
 
                   <h3 className="mb-1 text-lg font-semibold">{contact.name}</h3>
-                  <p className="mb-4 text-sm text-muted-foreground">{contact.position}</p>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    {contact.position}
+                  </p>
 
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
@@ -110,19 +215,21 @@ const Contacts = () => {
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {contact.categories.slice(0, 2).map(category => (
+                    {contact.categories.slice(0, 2).map((category) => (
                       <Badge key={category} variant="secondary">
                         {category}
                       </Badge>
                     ))}
                     {contact.categories.length > 2 && (
-                      <Badge variant="outline">+{contact.categories.length - 2}</Badge>
+                      <Badge variant="outline">
+                        +{contact.categories.length - 2}
+                      </Badge>
                     )}
                   </div>
 
                   {contact.tags && contact.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
-                      {contact.tags.map(tag => (
+                      {contact.tags.map((tag) => (
                         <Badge key={tag} variant="outline" className="text-xs">
                           {tag}
                         </Badge>

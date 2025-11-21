@@ -1,24 +1,43 @@
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { motion } from 'framer-motion';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
-import * as z from 'zod';
-import { RootState } from '@/store/store';
-import { useCreateContactMutation } from '@/store/services/contactsApi';
-import { addContact } from '@/store/slices/contactsSlice';
-import { useDispatch } from 'react-redux';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { MultiSelect } from '@/components/form/MultiSelect';
-import { DatePicker } from '@/components/form/DatePicker';
-import { ButtonLoader } from '@/components/loaders/ButtonLoader';
+import { useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate, useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
+import { format, parseISO } from "date-fns";
+import * as z from "zod";
+import { RootState } from "@/store/store";
+import {
+  useCreateContactMutation,
+  useUpdateContactMutation,
+} from "@/store/services/contactsApi";
+import type { CreateContactInput } from "@/store/services/contactsApi";
+import { addContact, updateContact } from "@/store/slices/contactsSlice";
+import { useDispatch } from "react-redux";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { MultiSelect } from "@/components/form/MultiSelect";
+import { DatePicker } from "@/components/form/DatePicker";
+import { TagInput } from "@/components/form/TagInput";
+import { ButtonLoader } from "@/components/loaders/ButtonLoader";
 import {
   User,
   Mail,
@@ -28,85 +47,157 @@ import {
   Linkedin,
   MapPin,
   ArrowLeft,
-} from 'lucide-react';
+  Tags,
+} from "lucide-react";
 
 // Categories list
-const CATEGORIES = ['Public', 'HR', 'Employee', 'Candidate', 'Client', 'Partner', 'Vendor', 'Other'];
+const CATEGORIES = [
+  "Public",
+  "HR",
+  "Employee",
+  "Candidate",
+  "Client",
+  "Partner",
+  "Vendor",
+  "Other",
+];
 
 // Zod validation schema
 const addContactSchema = z.object({
-  name: z.string().min(3, 'Name must be at least 3 characters'),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().regex(/^[0-9]{10}$/, 'Phone must be exactly 10 digits'),
-  company: z.string().min(2, 'Company must be at least 2 characters'),
-  categories: z.array(z.string()).min(1, 'Please select at least one category'),
-  birthday: z.date({
-    required_error: 'Birthday is required',
-    invalid_type_error: 'Please select a valid date',
-  }).refine(
-    (date) => {
-      const today = new Date();
-      const age = today.getFullYear() - date.getFullYear();
-      const monthDiff = today.getMonth() - date.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
-        return age - 1 >= 14;
-      }
-      return age >= 14;
-    },
-    { message: 'User must be at least 14 years old' }
-  ).refine(
-    (date) => date <= new Date(),
-    { message: 'Birthday must be a past date' }
-  ),
-  linkedinUrl: z.string().url('Invalid URL').refine(
-    (url) => url.startsWith('https://www.linkedin.com/'),
-    { message: 'LinkedIn URL must start with https://www.linkedin.com/' }
-  ),
-  address: z.string().min(5, 'Address must be at least 5 characters'),
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits"),
+  company: z.string().min(2, "Company must be at least 2 characters"),
+  categories: z.array(z.string()).min(1, "Please select at least one category"),
+  birthday: z
+    .date({
+      required_error: "Birthday is required",
+      invalid_type_error: "Please select a valid date",
+    })
+    .refine(
+      (date) => {
+        const today = new Date();
+        const age = today.getFullYear() - date.getFullYear();
+        const monthDiff = today.getMonth() - date.getMonth();
+        if (
+          monthDiff < 0 ||
+          (monthDiff === 0 && today.getDate() < date.getDate())
+        ) {
+          return age - 1 >= 14;
+        }
+        return age >= 14;
+      },
+      { message: "User must be at least 14 years old" }
+    )
+    .refine((date) => date <= new Date(), {
+      message: "Birthday must be a past date",
+    }),
+  linkedinUrl: z
+    .string()
+    .url("Invalid URL")
+    .refine((url) => url.startsWith("https://www.linkedin.com/"), {
+      message: "LinkedIn URL must start with https://www.linkedin.com/",
+    }),
+  address: z.string().min(5, "Address must be at least 5 characters"),
+  tags: z.array(z.string()).optional().default([]),
 });
 
 type AddContactForm = z.infer<typeof addContactSchema>;
 
 const AddContact = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  const [createContact, { isLoading }] = useCreateContactMutation();
+  const { contacts } = useSelector((state: RootState) => state.contacts);
+  const [createContact, { isLoading: isCreating }] = useCreateContactMutation();
+  const [updateContactMutation, { isLoading: isUpdating }] =
+    useUpdateContactMutation();
+
+  const isEditMode = !!id;
+  const existingContact = isEditMode ? contacts.find((c) => c.id === id) : null;
+  const isLoading = isCreating || isUpdating;
 
   const form = useForm<AddContactForm>({
     resolver: zodResolver(addContactSchema),
     defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      company: '',
+      name: "",
+      email: "",
+      phone: "",
+      company: "",
       categories: [],
       birthday: undefined,
-      linkedinUrl: '',
-      address: '',
+      linkedinUrl: "",
+      address: "",
+      tags: [],
     },
   });
+
+  // Populate form when editing
+  useEffect(() => {
+    if (existingContact) {
+      form.reset({
+        name: existingContact.name,
+        email: existingContact.email,
+        phone: existingContact.phone,
+        company: existingContact.company,
+        categories: existingContact.categories,
+        birthday: parseISO(existingContact.birthday),
+        linkedinUrl: existingContact.linkedinUrl,
+        address: existingContact.address,
+        tags: existingContact.tags || [],
+      });
+    }
+  }, [existingContact, form]);
 
   const onSubmit = async (data: AddContactForm) => {
     try {
       // Format birthday as string (YYYY-MM-DD)
-      const formattedData = {
-        ...data,
-        birthday: format(data.birthday, 'yyyy-MM-dd'),
+      const formattedData: CreateContactInput = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        company: data.company,
+        categories: data.categories,
+        birthday: format(data.birthday, "yyyy-MM-dd"),
+        linkedinUrl: data.linkedinUrl,
+        address: data.address,
+        tags: data.tags || [],
       };
 
-      // Call RTK Query mutation
-      const result = await createContact(formattedData).unwrap();
+      if (isEditMode && id) {
+        // Update existing contact
+        const result = await updateContactMutation({
+          id,
+          data: formattedData,
+        }).unwrap();
 
-      // Also update Redux store for immediate UI update
-      if (result) {
-        dispatch(addContact(result));
+        // Also update Redux store for immediate UI update
+        if (result) {
+          dispatch(updateContact(result));
+        }
+
+        toast.success("Contact updated successfully!");
+      } else {
+        // Create new contact
+        const result = await createContact(formattedData).unwrap();
+
+        // Also update Redux store for immediate UI update
+        if (result) {
+          dispatch(addContact(result));
+        }
+
+        toast.success("Contact created successfully!");
       }
 
-      toast.success('Contact created successfully!');
-      navigate('/contacts');
+      navigate("/contacts");
     } catch (error: any) {
-      toast.error(error?.data?.message || 'Failed to create contact. Please try again.');
+      toast.error(
+        error?.data?.message ||
+          `Failed to ${
+            isEditMode ? "update" : "create"
+          } contact. Please try again.`
+      );
     }
   };
 
@@ -123,15 +214,19 @@ const AddContact = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/contacts')}
+            onClick={() => navigate("/contacts")}
             className="hover:scale-105 transition-transform"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Add New Contact</h1>
+            <h1 className="text-3xl font-bold">
+              {isEditMode ? "Edit Contact" : "Add New Contact"}
+            </h1>
             <p className="text-muted-foreground">
-              Create a new contact in your CRM system
+              {isEditMode
+                ? "Update contact information in your CRM system"
+                : "Create a new contact in your CRM system"}
             </p>
           </div>
         </div>
@@ -146,7 +241,10 @@ const AddContact = () => {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
                 {/* Two Column Grid */}
                 <div className="grid gap-6 md:grid-cols-2">
                   {/* Name */}
@@ -212,7 +310,7 @@ const AddContact = () => {
                             {...field}
                             onChange={(e) => {
                               // Only allow digits
-                              const value = e.target.value.replace(/\D/g, '');
+                              const value = e.target.value.replace(/\D/g, "");
                               field.onChange(value);
                             }}
                             className="transition-all focus:scale-[1.02]"
@@ -310,7 +408,8 @@ const AddContact = () => {
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
                           <Linkedin className="h-4 w-4" />
-                          LinkedIn URL <span className="text-destructive">*</span>
+                          LinkedIn URL{" "}
+                          <span className="text-destructive">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -345,6 +444,34 @@ const AddContact = () => {
                       </FormItem>
                     )}
                   />
+
+                  {/* Tags */}
+                  <FormField
+                    control={form.control}
+                    name="tags"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="flex items-center gap-2">
+                          <Tags className="h-4 w-4" />
+                          Tags
+                        </FormLabel>
+                        <FormControl>
+                          <Controller
+                            control={form.control}
+                            name="tags"
+                            render={({ field: { value, onChange } }) => (
+                              <TagInput
+                                tags={value || []}
+                                onChange={onChange}
+                                placeholder="Type and press Enter to add tags"
+                              />
+                            )}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
                 {/* Action Buttons */}
@@ -352,7 +479,7 @@ const AddContact = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => navigate('/contacts')}
+                    onClick={() => navigate("/contacts")}
                     className="w-full sm:w-auto hover:scale-105 transition-transform"
                   >
                     Cancel
@@ -365,10 +492,14 @@ const AddContact = () => {
                     {isLoading ? (
                       <>
                         <ButtonLoader size={16} />
-                        <span className="ml-2">Saving...</span>
+                        <span className="ml-2">
+                          {isEditMode ? "Updating..." : "Saving..."}
+                        </span>
                       </>
+                    ) : isEditMode ? (
+                      "Update Contact"
                     ) : (
-                      'Save Contact'
+                      "Save Contact"
                     )}
                   </Button>
                 </div>
@@ -382,4 +513,3 @@ const AddContact = () => {
 };
 
 export default AddContact;
-
