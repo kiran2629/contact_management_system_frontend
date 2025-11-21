@@ -45,6 +45,21 @@ const authSlice = createSlice({
       state.loading = false;
       localStorage.setItem("crm_user", JSON.stringify(action.payload));
     },
+    setToken: (state, action: PayloadAction<string>) => {
+      state.token = action.payload;
+      localStorage.setItem("crm_token", action.payload);
+    },
+    setRefreshToken: (state, action: PayloadAction<string>) => {
+      localStorage.setItem("crm_refresh_token", action.payload);
+      // Also set as cookie
+      const cookieOptions = [
+        `refreshToken=${action.payload}`,
+        "path=/",
+        "SameSite=Lax",
+        `max-age=${7 * 24 * 60 * 60}`, // 7 days
+      ].join("; ");
+      document.cookie = cookieOptions;
+    },
     logout: (state) => {
       state.user = null;
       state.token = null;
@@ -67,6 +82,12 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser, setCredentials, logout, initializeAuth } =
-  authSlice.actions;
+export const {
+  setUser,
+  setCredentials,
+  setToken,
+  setRefreshToken,
+  logout,
+  initializeAuth,
+} = authSlice.actions;
 export default authSlice.reducer;

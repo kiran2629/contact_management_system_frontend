@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { motion, AnimatePresence } from 'framer-motion';
-import { RootState } from '@/store/store';
-import { logout } from '@/store/slices/authSlice';
-import { toggleTheme } from '@/store/slices/themeSlice';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { motion, AnimatePresence } from "framer-motion";
+import { RootState } from "@/store/store";
+import { logout } from "@/store/slices/authSlice";
+import { toggleTheme } from "@/store/slices/themeSlice";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   LayoutDashboard,
   Users,
@@ -20,7 +20,7 @@ import {
   Shield,
   Activity,
   Sparkles,
-} from 'lucide-react';
+} from "lucide-react";
 
 export const FloatingNav = () => {
   const location = useLocation();
@@ -30,13 +30,16 @@ export const FloatingNav = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: Users, label: 'Contacts', path: '/contacts' },
-    { icon: Activity, label: 'Activity', path: '/activity-logs' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
-    ...(user?.role === 'Admin' ? [
-      { icon: Shield, label: 'Admin', path: '/admin/users' },
-    ] : []),
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+    { icon: Users, label: "Contacts", path: "/contacts" },
+    { icon: Activity, label: "Activity", path: "/activity-logs" },
+    { icon: Settings, label: "Settings", path: "/settings" },
+    ...(user?.role === "Admin"
+      ? [
+          { icon: Users, label: "User Management", path: "/admin/users" },
+          { icon: Shield, label: "Permissions", path: "/admin/permissions" },
+        ]
+      : []),
   ];
 
   const handleLogout = () => {
@@ -47,7 +50,8 @@ export const FloatingNav = () => {
     dispatch(toggleTheme());
   };
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
     <>
@@ -63,7 +67,10 @@ export const FloatingNav = () => {
             {/* Logo & Navigation */}
             <div className="flex items-center gap-4">
               <Link to="/dashboard" className="relative group">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
@@ -78,8 +85,8 @@ export const FloatingNav = () => {
                     to={item.path}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                       isActive(item.path)
-                        ? 'bg-gradient-to-r from-primary to-secondary text-white'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                        ? "bg-gradient-to-r from-primary to-secondary text-white"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     }`}
                   >
                     <item.icon className="w-4 h-4" />
@@ -97,7 +104,11 @@ export const FloatingNav = () => {
                 onClick={handleThemeToggle}
                 className="rounded-lg w-9 h-9"
               >
-                {mode === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                {mode === "light" ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
               </Button>
 
               <Button
@@ -110,7 +121,10 @@ export const FloatingNav = () => {
               </Button>
 
               <Link to="/profile" className="hidden md:flex">
-                <motion.div whileHover={{ scale: 1.05 }} className="flex items-center gap-2 glass-card rounded-lg px-3 py-1.5 border border-border/20">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="flex items-center gap-2 glass-card rounded-lg px-3 py-1.5 border border-border/20"
+                >
                   <Avatar className="h-7 w-7 border border-primary/30">
                     <AvatarImage src={user?.avatar} />
                     <AvatarFallback className="text-xs font-bold bg-gradient-to-br from-primary to-secondary text-white">
@@ -127,7 +141,11 @@ export const FloatingNav = () => {
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="lg:hidden rounded-lg"
               >
-                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {isMenuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
               </Button>
             </div>
           </div>
@@ -145,9 +163,10 @@ export const FloatingNav = () => {
           >
             <div className="glass-card rounded-2xl border border-border/20 shadow-lg p-4">
               <div className="space-y-1">
-                {[...navItems, 
-                  { icon: UserCircle, label: 'Profile', path: '/profile' },
-                  { icon: Settings, label: 'Settings', path: '/settings' }
+                {[
+                  ...navItems,
+                  { icon: UserCircle, label: "Profile", path: "/profile" },
+                  { icon: Settings, label: "Settings", path: "/settings" },
                 ].map((item) => (
                   <Link
                     key={item.path}
@@ -155,8 +174,8 @@ export const FloatingNav = () => {
                     onClick={() => setIsMenuOpen(false)}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
                       isActive(item.path)
-                        ? 'bg-gradient-to-r from-primary to-secondary text-white'
-                        : 'text-muted-foreground hover:bg-muted/50'
+                        ? "bg-gradient-to-r from-primary to-secondary text-white"
+                        : "text-muted-foreground hover:bg-muted/50"
                     }`}
                   >
                     <item.icon className="w-5 h-5" />
@@ -187,17 +206,19 @@ export const FloatingNav = () => {
         <div className="glass-card rounded-2xl border border-border/20 shadow-lg px-4 py-3">
           <div className="flex items-center justify-around">
             {navItems.slice(0, 4).map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className="relative p-2"
-              >
-                <div className={`p-2 rounded-xl transition-all ${
-                  isActive(item.path)
-                    ? 'bg-gradient-to-br from-primary to-secondary'
-                    : 'text-muted-foreground'
-                }`}>
-                  <item.icon className={`w-6 h-6 ${isActive(item.path) ? 'text-white' : ''}`} />
+              <Link key={item.path} to={item.path} className="relative p-2">
+                <div
+                  className={`p-2 rounded-xl transition-all ${
+                    isActive(item.path)
+                      ? "bg-gradient-to-br from-primary to-secondary"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <item.icon
+                    className={`w-6 h-6 ${
+                      isActive(item.path) ? "text-white" : ""
+                    }`}
+                  />
                 </div>
                 {isActive(item.path) && (
                   <motion.div

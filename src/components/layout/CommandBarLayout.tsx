@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { motion, AnimatePresence } from 'framer-motion';
-import { RootState } from '@/store/store';
-import { logout } from '@/store/slices/authSlice';
-import { toggleTheme } from '@/store/slices/themeSlice';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { motion, AnimatePresence } from "framer-motion";
+import { RootState } from "@/store/store";
+import { logout } from "@/store/slices/authSlice";
+import { toggleTheme } from "@/store/slices/themeSlice";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard,
   Users,
@@ -21,47 +21,86 @@ import {
   Search,
   UserCircle,
   Sparkles,
-} from 'lucide-react';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { toast } from "sonner";
 
-export const CommandBarLayout = ({ children }: { children: React.ReactNode }) => {
+export const CommandBarLayout = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const { mode } = useSelector((state: RootState) => state.theme);
   const [commandOpen, setCommandOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', shortcut: 'D' },
-    { icon: Users, label: 'Contacts', path: '/contacts', shortcut: 'C' },
-    { icon: Activity, label: 'Activity', path: '/activity-logs', shortcut: 'A' },
-    { icon: Settings, label: 'Settings', path: '/settings', shortcut: 'S' },
-    { icon: UserCircle, label: 'Profile', path: '/profile', shortcut: 'P' },
-    ...(user?.role === 'Admin' ? [
-      { icon: Shield, label: 'Admin', path: '/admin/users', shortcut: 'X' },
-    ] : []),
+    {
+      icon: LayoutDashboard,
+      label: "Dashboard",
+      path: "/dashboard",
+      shortcut: "D",
+    },
+    { icon: Users, label: "Contacts", path: "/contacts", shortcut: "C" },
+    {
+      icon: Activity,
+      label: "Activity",
+      path: "/activity-logs",
+      shortcut: "A",
+    },
+    { icon: Settings, label: "Settings", path: "/settings", shortcut: "S" },
+    { icon: UserCircle, label: "Profile", path: "/profile", shortcut: "P" },
+    ...(user?.role === "Admin"
+      ? [
+          {
+            icon: Users,
+            label: "User Management",
+            path: "/admin/users",
+            shortcut: "U",
+          },
+          {
+            icon: Shield,
+            label: "Permissions",
+            path: "/admin/permissions",
+            shortcut: "P",
+          },
+        ]
+      : []),
   ];
 
   const actions = [
-    { icon: Moon, label: 'Toggle Theme', action: () => dispatch(toggleTheme()), shortcut: 'T' },
-    { icon: LogOut, label: 'Logout', action: handleLogout, shortcut: 'L', destructive: true },
+    {
+      icon: Moon,
+      label: "Toggle Theme",
+      action: () => dispatch(toggleTheme()),
+      shortcut: "T",
+    },
+    {
+      icon: LogOut,
+      label: "Logout",
+      action: handleLogout,
+      shortcut: "L",
+      destructive: true,
+    },
   ];
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   function handleLogout() {
     dispatch(logout());
-    toast.success('Logged out successfully');
+    toast.success("Logged out successfully");
     setCommandOpen(false);
   }
 
-  const filteredItems = navItems.filter(item =>
+  const filteredItems = navItems.filter((item) =>
     item.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredActions = actions.filter(action =>
+  const filteredActions = actions.filter((action) =>
     action.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -69,19 +108,19 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd+K or Ctrl+K to open command palette
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setCommandOpen(prev => !prev);
+        setCommandOpen((prev) => !prev);
       }
 
       // Escape to close
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setCommandOpen(false);
       }
 
       // Quick navigation shortcuts (when command palette is closed)
       if (!commandOpen && (e.metaKey || e.ctrlKey)) {
-        const item = navItems.find(i => i.shortcut === e.key.toUpperCase());
+        const item = navItems.find((i) => i.shortcut === e.key.toUpperCase());
         if (item) {
           e.preventDefault();
           navigate(item.path);
@@ -89,14 +128,14 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [commandOpen, navigate]);
 
   // Clear search when opening
   useEffect(() => {
     if (commandOpen) {
-      setSearchQuery('');
+      setSearchQuery("");
     }
   }, [commandOpen]);
 
@@ -115,7 +154,9 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
-              <span className="font-black text-lg text-gradient-shine hidden sm:inline">CRM</span>
+              <span className="font-black text-lg text-gradient-shine hidden sm:inline">
+                CRM
+              </span>
             </Link>
 
             {/* Command Button */}
@@ -124,12 +165,16 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
               className="flex items-center gap-3 px-4 py-2 rounded-lg border border-border/30 hover:border-primary/50 hover:bg-muted/30 transition-all group"
             >
               <Search className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-              <span className="text-sm text-muted-foreground hidden md:inline">Search or jump to...</span>
+              <span className="text-sm text-muted-foreground hidden md:inline">
+                Search or jump to...
+              </span>
               <div className="hidden sm:flex items-center gap-1 ml-4">
                 <kbd className="px-2 py-0.5 text-xs bg-muted rounded border border-border/30">
-                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}
+                  {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"}
                 </kbd>
-                <kbd className="px-2 py-0.5 text-xs bg-muted rounded border border-border/30">K</kbd>
+                <kbd className="px-2 py-0.5 text-xs bg-muted rounded border border-border/30">
+                  K
+                </kbd>
               </div>
             </button>
 
@@ -141,7 +186,11 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                 onClick={() => dispatch(toggleTheme())}
                 className="rounded-lg h-9 w-9 hidden md:flex"
               >
-                {mode === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                {mode === "light" ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
               </Button>
 
               <Button
@@ -219,8 +268,8 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                         onClick={() => setCommandOpen(false)}
                         className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all ${
                           isActive(item.path)
-                            ? 'bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/30'
-                            : 'hover:bg-muted/50'
+                            ? "bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/30"
+                            : "hover:bg-muted/50"
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -228,7 +277,8 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                           <span className="font-medium">{item.label}</span>
                         </div>
                         <kbd className="px-2 py-1 text-xs bg-muted rounded border border-border/30">
-                          {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'} {item.shortcut}
+                          {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"}{" "}
+                          {item.shortcut}
                         </kbd>
                       </Link>
                     ))}
@@ -250,8 +300,8 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                         }}
                         className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all ${
                           action.destructive
-                            ? 'hover:bg-destructive/10 text-destructive'
-                            : 'hover:bg-muted/50'
+                            ? "hover:bg-destructive/10 text-destructive"
+                            : "hover:bg-muted/50"
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -260,7 +310,8 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                         </div>
                         {action.shortcut && (
                           <kbd className="px-2 py-1 text-xs bg-muted rounded border border-border/30">
-                            {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'} {action.shortcut}
+                            {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"}{" "}
+                            {action.shortcut}
                           </kbd>
                         )}
                       </button>
@@ -279,17 +330,25 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
               <div className="p-3 border-t border-border/20 text-xs text-muted-foreground flex items-center justify-between bg-muted/20">
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1">
-                    <kbd className="px-2 py-1 bg-background rounded border border-border/30">↑</kbd>
-                    <kbd className="px-2 py-1 bg-background rounded border border-border/30">↓</kbd>
+                    <kbd className="px-2 py-1 bg-background rounded border border-border/30">
+                      ↑
+                    </kbd>
+                    <kbd className="px-2 py-1 bg-background rounded border border-border/30">
+                      ↓
+                    </kbd>
                     Navigate
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-2 py-1 bg-background rounded border border-border/30">Enter</kbd>
+                    <kbd className="px-2 py-1 bg-background rounded border border-border/30">
+                      Enter
+                    </kbd>
                     Select
                   </span>
                 </div>
                 <span className="flex items-center gap-1">
-                  <kbd className="px-2 py-1 bg-background rounded border border-border/30">Esc</kbd>
+                  <kbd className="px-2 py-1 bg-background rounded border border-border/30">
+                    Esc
+                  </kbd>
                   Close
                 </span>
               </div>
@@ -300,9 +359,7 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
 
       {/* Main Content */}
       <main className="pt-24 pb-8 px-4 md:px-6 lg:px-8">
-        <div className="max-w-[1920px] mx-auto">
-          {children}
-        </div>
+        <div className="max-w-[1920px] mx-auto">{children}</div>
       </main>
 
       {/* Floating Action Button (Mobile) */}
@@ -319,4 +376,3 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
     </div>
   );
 };
-

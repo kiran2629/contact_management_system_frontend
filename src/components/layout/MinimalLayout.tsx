@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { motion, AnimatePresence } from 'framer-motion';
-import { RootState } from '@/store/store';
-import { logout } from '@/store/slices/authSlice';
-import { toggleTheme } from '@/store/slices/themeSlice';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { motion, AnimatePresence } from "framer-motion";
+import { RootState } from "@/store/store";
+import { logout } from "@/store/slices/authSlice";
+import { toggleTheme } from "@/store/slices/themeSlice";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   LayoutDashboard,
   Users,
@@ -17,8 +17,8 @@ import {
   Moon,
   Sun,
   Command,
-} from 'lucide-react';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { toast } from "sonner";
 
 export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -29,20 +29,24 @@ export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
   const [commandOpen, setCommandOpen] = useState(false);
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: Users, label: 'Contacts', path: '/contacts' },
-    { icon: Activity, label: 'Activity', path: '/activity-logs' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
-    ...(user?.role === 'Admin' ? [
-      { icon: Shield, label: 'Admin', path: '/admin/users' },
-    ] : []),
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+    { icon: Users, label: "Contacts", path: "/contacts" },
+    { icon: Activity, label: "Activity", path: "/activity-logs" },
+    { icon: Settings, label: "Settings", path: "/settings" },
+    ...(user?.role === "Admin"
+      ? [
+          { icon: Users, label: "User Management", path: "/admin/users" },
+          { icon: Shield, label: "Permissions", path: "/admin/permissions" },
+        ]
+      : []),
   ];
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   const handleLogout = () => {
     dispatch(logout());
-    toast.success('Logged out successfully');
+    toast.success("Logged out successfully");
   };
 
   const handleThemeToggle = () => {
@@ -52,13 +56,13 @@ export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
   // Keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === '\\' || (e.key === 'k' && (e.metaKey || e.ctrlKey))) {
+      if (e.key === "\\" || (e.key === "k" && (e.metaKey || e.ctrlKey))) {
         e.preventDefault();
-        setCommandOpen(prev => !prev);
+        setCommandOpen((prev) => !prev);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   return (
@@ -87,7 +91,7 @@ export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
               initial={{ x: -300 }}
               animate={{ x: 0 }}
               exit={{ x: -300 }}
-              transition={{ type: 'spring', damping: 25 }}
+              transition={{ type: "spring", damping: 25 }}
               onMouseLeave={() => setIsNavVisible(false)}
               className="fixed top-0 left-0 bottom-0 w-72 bg-card/95 backdrop-blur-xl border-r border-border/30 z-50 flex flex-col shadow-2xl"
             >
@@ -102,7 +106,9 @@ export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
                   </Avatar>
                   <div>
                     <p className="font-bold">{user?.username}</p>
-                    <p className="text-xs text-muted-foreground">{user?.role}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user?.role}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -117,8 +123,8 @@ export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
                       onClick={() => setIsNavVisible(false)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                         isActive(item.path)
-                          ? 'bg-gradient-to-r from-primary to-secondary text-white'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                          ? "bg-gradient-to-r from-primary to-secondary text-white"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       }`}
                     >
                       <item.icon className="w-5 h-5" />
@@ -136,7 +142,11 @@ export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
                   onClick={handleThemeToggle}
                   className="w-full justify-start"
                 >
-                  {mode === 'light' ? <Moon className="w-4 h-4 mr-2" /> : <Sun className="w-4 h-4 mr-2" />}
+                  {mode === "light" ? (
+                    <Moon className="w-4 h-4 mr-2" />
+                  ) : (
+                    <Sun className="w-4 h-4 mr-2" />
+                  )}
                   Toggle Theme
                 </Button>
                 <Button
@@ -201,13 +211,21 @@ export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
                   >
                     <item.icon className="w-5 h-5 text-primary" />
                     <span className="font-medium">{item.label}</span>
-                    <span className="ml-auto text-xs text-muted-foreground">{item.path}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {item.path}
+                    </span>
                   </Link>
                 ))}
               </div>
               <div className="p-3 border-t border-border/20 text-xs text-muted-foreground flex items-center justify-between">
-                <span>Press <kbd className="px-2 py-1 bg-muted rounded">Ctrl+K</kbd> to open</span>
-                <span>Press <kbd className="px-2 py-1 bg-muted rounded">Esc</kbd> to close</span>
+                <span>
+                  Press <kbd className="px-2 py-1 bg-muted rounded">Ctrl+K</kbd>{" "}
+                  to open
+                </span>
+                <span>
+                  Press <kbd className="px-2 py-1 bg-muted rounded">Esc</kbd> to
+                  close
+                </span>
               </div>
             </motion.div>
           </motion.div>
@@ -216,11 +234,8 @@ export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Main Content */}
       <main className="relative min-h-screen p-4 md:p-6 lg:p-8">
-        <div className="max-w-[1920px] mx-auto">
-          {children}
-        </div>
+        <div className="max-w-[1920px] mx-auto">{children}</div>
       </main>
     </div>
   );
 };
-

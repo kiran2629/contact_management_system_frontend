@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { motion, AnimatePresence } from 'framer-motion';
-import { RootState } from '@/store/store';
-import { logout } from '@/store/slices/authSlice';
-import { toggleTheme } from '@/store/slices/themeSlice';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { motion, AnimatePresence } from "framer-motion";
+import { RootState } from "@/store/store";
+import { logout } from "@/store/slices/authSlice";
+import { toggleTheme } from "@/store/slices/themeSlice";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   LayoutDashboard,
   Users,
@@ -18,10 +18,14 @@ import {
   Sun,
   MoreHorizontal,
   UserCircle,
-} from 'lucide-react';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { toast } from "sonner";
 
-export const BottomBarLayout = ({ children }: { children: React.ReactNode }) => {
+export const BottomBarLayout = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -29,24 +33,28 @@ export const BottomBarLayout = ({ children }: { children: React.ReactNode }) => 
   const [menuOpen, setMenuOpen] = useState(false);
 
   const mainNavItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: Users, label: 'Contacts', path: '/contacts' },
-    { icon: Activity, label: 'Activity', path: '/activity-logs' },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+    { icon: Users, label: "Contacts", path: "/contacts" },
+    { icon: Activity, label: "Activity", path: "/activity-logs" },
   ];
 
   const moreItems = [
-    { icon: Settings, label: 'Settings', path: '/settings' },
-    { icon: UserCircle, label: 'Profile', path: '/profile' },
-    ...(user?.role === 'Admin' ? [
-      { icon: Shield, label: 'Admin', path: '/admin/users' },
-    ] : []),
+    { icon: Settings, label: "Settings", path: "/settings" },
+    { icon: UserCircle, label: "Profile", path: "/profile" },
+    ...(user?.role === "Admin"
+      ? [
+          { icon: Users, label: "User Management", path: "/admin/users" },
+          { icon: Shield, label: "Permissions", path: "/admin/permissions" },
+        ]
+      : []),
   ];
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   const handleLogout = () => {
     dispatch(logout());
-    toast.success('Logged out successfully');
+    toast.success("Logged out successfully");
     setMenuOpen(false);
   };
 
@@ -58,9 +66,7 @@ export const BottomBarLayout = ({ children }: { children: React.ReactNode }) => 
     <div className="relative min-h-screen pb-24 bg-background">
       {/* Main Content */}
       <main className="p-4 md:p-6">
-        <div className="max-w-[1920px] mx-auto">
-          {children}
-        </div>
+        <div className="max-w-[1920px] mx-auto">{children}</div>
       </main>
 
       {/* Bottom Navigation Bar */}
@@ -81,13 +87,15 @@ export const BottomBarLayout = ({ children }: { children: React.ReactNode }) => 
                   <div
                     className={`relative p-3 rounded-2xl transition-all ${
                       isActive(item.path)
-                        ? 'bg-gradient-to-br from-primary to-secondary shadow-lg scale-110'
-                        : 'hover:bg-muted/50'
+                        ? "bg-gradient-to-br from-primary to-secondary shadow-lg scale-110"
+                        : "hover:bg-muted/50"
                     }`}
                   >
                     <item.icon
                       className={`w-6 h-6 ${
-                        isActive(item.path) ? 'text-white' : 'text-muted-foreground group-hover:text-foreground'
+                        isActive(item.path)
+                          ? "text-white"
+                          : "text-muted-foreground group-hover:text-foreground"
                       }`}
                     />
                     {isActive(item.path) && (
@@ -99,7 +107,9 @@ export const BottomBarLayout = ({ children }: { children: React.ReactNode }) => 
                   </div>
                   <span
                     className={`text-xs font-medium ${
-                      isActive(item.path) ? 'text-foreground' : 'text-muted-foreground'
+                      isActive(item.path)
+                        ? "text-foreground"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {item.label}
@@ -114,16 +124,22 @@ export const BottomBarLayout = ({ children }: { children: React.ReactNode }) => 
               >
                 <div
                   className={`p-3 rounded-2xl transition-all ${
-                    menuOpen ? 'bg-gradient-to-br from-primary to-secondary' : 'hover:bg-muted/50'
+                    menuOpen
+                      ? "bg-gradient-to-br from-primary to-secondary"
+                      : "hover:bg-muted/50"
                   }`}
                 >
                   <MoreHorizontal
                     className={`w-6 h-6 ${
-                      menuOpen ? 'text-white' : 'text-muted-foreground'
+                      menuOpen ? "text-white" : "text-muted-foreground"
                     }`}
                   />
                 </div>
-                <span className={`text-xs font-medium ${menuOpen ? 'text-foreground' : 'text-muted-foreground'}`}>
+                <span
+                  className={`text-xs font-medium ${
+                    menuOpen ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
                   More
                 </span>
               </button>
@@ -147,7 +163,7 @@ export const BottomBarLayout = ({ children }: { children: React.ReactNode }) => 
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25 }}
+              transition={{ type: "spring", damping: 25 }}
               className="fixed bottom-24 left-4 right-4 z-50 mx-auto max-w-md"
             >
               <div className="glass-card rounded-2xl border border-border/20 shadow-2xl overflow-hidden">
@@ -162,7 +178,9 @@ export const BottomBarLayout = ({ children }: { children: React.ReactNode }) => 
                     </Avatar>
                     <div className="flex-1">
                       <p className="font-bold">{user?.username}</p>
-                      <p className="text-sm text-muted-foreground">{user?.role}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {user?.role}
+                      </p>
                     </div>
                     <Button
                       variant="ghost"
@@ -170,7 +188,11 @@ export const BottomBarLayout = ({ children }: { children: React.ReactNode }) => 
                       onClick={handleThemeToggle}
                       className="shrink-0"
                     >
-                      {mode === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                      {mode === "light" ? (
+                        <Moon className="w-5 h-5" />
+                      ) : (
+                        <Sun className="w-5 h-5" />
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -184,8 +206,8 @@ export const BottomBarLayout = ({ children }: { children: React.ReactNode }) => 
                       onClick={() => setMenuOpen(false)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                         isActive(item.path)
-                          ? 'bg-gradient-to-r from-primary to-secondary text-white'
-                          : 'hover:bg-muted/50'
+                          ? "bg-gradient-to-r from-primary to-secondary text-white"
+                          : "hover:bg-muted/50"
                       }`}
                     >
                       <item.icon className="w-5 h-5" />
@@ -209,4 +231,3 @@ export const BottomBarLayout = ({ children }: { children: React.ReactNode }) => 
     </div>
   );
 };
-
