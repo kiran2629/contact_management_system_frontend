@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { RootState } from '@/store/store';
 import { updatePermission, resetPermissions } from '@/store/slices/permissionsSlice';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { LayoutRouter } from '@/components/layout/LayoutRouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -163,7 +163,7 @@ const AdminPermissions = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </AppLayout>
+    </LayoutRouter>
   );
 };
 

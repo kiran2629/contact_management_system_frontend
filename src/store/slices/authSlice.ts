@@ -5,6 +5,9 @@ interface User {
   username: string;
   role: 'Admin' | 'HR' | 'User';
   allowed_categories: string[];
+  name: string;
+  email: string;
+  avatar: string;
 }
 
 interface AuthState {

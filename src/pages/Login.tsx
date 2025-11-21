@@ -107,6 +107,9 @@ const Login = () => {
         username: user.username,
         role: user.role as "Admin" | "HR" | "User",
         allowed_categories: user.allowed_categories || [],
+        name: user.name || user.username,
+        email: user.email || "",
+        avatar: user.avatar || "",
       };
 
       // Store credentials
