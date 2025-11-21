@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 174 77% 56%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 214 32% 91%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 45 93% 47%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 88%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(174 77% 56%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(174 77% 56%) 0%, hsl(45 93% 47%) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(217 91% 30%) 100%);
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+    --shadow-glow: 0 0 20px hsl(217 91% 60% / 0.3);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 88%;
+    --sidebar-ring: 217 91% 60%;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 174 77% 56%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 45 93% 47%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3);
+    --shadow-glow: 0 0 30px hsl(217 91% 60% / 0.4);
+
+    --sidebar-background: 222 47% 9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  /* Gradient utilities */
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(174 77% 56%) 100%);
+  }
+
+  .gradient-secondary {
+    background: linear-gradient(135deg, hsl(174 77% 56%) 0%, hsl(45 93% 47%) 100%);
+  }
+
+  .gradient-dark {
+    background: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(217 91% 30%) 100%);
+  }
+
+  /* Animations */
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.2s ease-out;
+  }
+
+  /* Custom shadows */
+  .shadow-glow {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+
+  .dark .shadow-glow {
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.4);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "log1",
+    "timestamp": "2024-11-21T10:30:00Z",
+    "user": "1",
+    "action": "login",
+    "meta": {
+      "ip": "192.168.1.1",
+      "device": "Desktop"
+    }
+  },
+  {
+    "id": "log2",
+    "timestamp": "2024-11-21T10:32:15Z",
+    "user": "1",
+    "action": "view_contact",
+    "meta": {
+      "contact_id": "c3",
+      "contact_name": "Michael Chen"
+    }
+  },
+  {
+    "id": "log3",
+    "timestamp": "2024-11-21T09:15:00Z",
+    "user": "2",
+    "action": "login",
+    "meta": {
+      "ip": "192.168.1.5",
+      "device": "Mobile"
+    }
+  },
+  {
+    "id": "log4",
+    "timestamp": "2024-11-21T09:20:30Z",
+    "user": "2",
+    "action": "create_contact",
+    "meta": {
+      "contact_id": "c6",
+      "contact_name": "Jessica Taylor"
+    }
+  },
+  {
+    "id": "log5",
+    "timestamp": "2024-11-21T08:45:00Z",
+    "user": "3",
+    "action": "login",
+    "meta": {
+      "ip": "192.168.1.10",
+      "device": "Desktop"
+    }
+  },
+  {
+    "id": "log6",
+    "timestamp": "2024-11-20T16:00:00Z",
+    "user": "1",
+    "action": "manage_permissions",
+    "meta": {
+      "changed_role": "HR",
+      "permission": "delete_contact",
+      "value": false
+    }
+  },
+  {
+    "id": "log7",
+    "timestamp": "2024-11-20T15:30:00Z",
+    "user": "1",
+    "action": "create_user",
+    "meta": {
+      "new_user_id": "5",
+      "new_user_name": "Lisa Standard User",
+      "role": "User"
+    }
+  }
+]
