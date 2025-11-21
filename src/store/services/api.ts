@@ -7,6 +7,10 @@ import {
 import { RootState, store } from "../store";
 import { setToken, setRefreshToken, logout } from "../slices/authSlice";
 
+// API Base URL Configuration:
+// - Development: Uses .env file (VITE_API_URL=http://localhost:5000)
+// - Production: Uses .env.production file (VITE_API_URL=https://crmnodeapi.onrender.com)
+// Vite automatically loads the correct .env file based on the build mode
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const baseQueryWithAuth = fetchBaseQuery({

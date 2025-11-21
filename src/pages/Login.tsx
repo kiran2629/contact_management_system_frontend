@@ -14,19 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { ButtonLoader } from "@/components/loaders/ButtonLoader";
-import {
-  Building2,
-  Lock,
-  User,
-  Sparkles,
-  Shield,
-  Zap,
-  Crown,
-  Users,
-  UserCircle,
-  Star,
-  CheckCircle2,
-} from "lucide-react";
+import { Building2, Lock, User } from "lucide-react";
 import { toast } from "sonner";
 import { useLoginMutation } from "@/store/services/authApi";
 
@@ -42,39 +30,14 @@ const Login = () => {
   const navigate = useNavigate();
   const { mode } = useSelector((state: RootState) => state.theme);
   const [loginMutation, { isLoading }] = useLoginMutation();
-  const [detectedRole, setDetectedRole] = useState<
-    "Admin" | "HR" | "User" | null
-  >(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    watch,
-    setValue,
-    trigger,
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
-
-  const email = watch("email");
-
-  // Detect role based on email
-  React.useEffect(() => {
-    if (email) {
-      if (email.toLowerCase().includes("admin")) {
-        setDetectedRole("Admin");
-      } else if (email.toLowerCase().includes("hr")) {
-        setDetectedRole("HR");
-      } else if (email.toLowerCase().includes("user")) {
-        setDetectedRole("User");
-      } else {
-        setDetectedRole(null);
-      }
-    } else {
-      setDetectedRole(null);
-    }
-  }, [email]);
 
   // Helper function to decode JWT token
   const decodeJWT = (token: string) => {
@@ -314,9 +277,9 @@ const Login = () => {
               className="grid grid-cols-3 gap-6 pt-8"
             >
               {[
-                { icon: Shield, text: "Secure" },
-                { icon: Zap, text: "Fast" },
-                { icon: Sparkles, text: "Modern" },
+                { icon: Building2, text: "Secure" },
+                { icon: Lock, text: "Fast" },
+                { icon: User, text: "Modern" },
               ].map((feature, index) => (
                 <motion.div
                   key={feature.text}
@@ -391,48 +354,6 @@ const Login = () => {
                         className="border-white/20 bg-white/10 pl-10 text-white placeholder:text-purple-200 focus:border-purple-400 focus:ring-purple-400"
                         {...register("email")}
                       />
-                      {/* Role Detection Indicator */}
-                      {detectedRole && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="absolute right-3 top-3"
-                        >
-                          {detectedRole === "Admin" && (
-                            <motion.div
-                              animate={{ rotate: [0, 360] }}
-                              transition={{
-                                duration: 2,
-                                repeat: Infinity,
-                                ease: "linear",
-                              }}
-                            >
-                              <Crown className="h-5 w-5 text-yellow-400" />
-                            </motion.div>
-                          )}
-                          {detectedRole === "HR" && (
-                            <motion.div
-                              animate={{ scale: [1, 1.2, 1] }}
-                              transition={{ duration: 1.5, repeat: Infinity }}
-                            >
-                              <Users className="h-5 w-5 text-cyan-400" />
-                            </motion.div>
-                          )}
-                          {detectedRole === "User" && (
-                            <motion.div
-                              animate={{ rotate: [0, 180, 360] }}
-                              transition={{
-                                duration: 2,
-                                repeat: Infinity,
-                                ease: "linear",
-                              }}
-                            >
-                              <UserCircle className="h-5 w-5 text-pink-400" />
-                            </motion.div>
-                          )}
-                        </motion.div>
-                      )}
                     </div>
                     {errors.email && (
                       <motion.p
@@ -500,233 +421,6 @@ const Login = () => {
                     </Button>
                   </motion.div>
                 </form>
-
-                {/* Role Cards with Animations */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                  className="mt-6 space-y-3"
-                >
-                  <p className="text-xs font-semibold text-purple-200 text-center mb-4">
-                    Select Your Role:
-                  </p>
-
-                  {/* Admin Role Card */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.9 }}
-                    whileHover={{ scale: 1.02, x: 5 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={async () => {
-                      await setValue("email", "test@example.com", {
-                        shouldValidate: true,
-                      });
-                      await setValue("password", "password123", {
-                        shouldValidate: true,
-                      });
-                      trigger();
-                    }}
-                    className="group relative cursor-pointer overflow-hidden rounded-xl bg-gradient-to-r from-blue-600/20 to-purple-600/20 p-4 backdrop-blur-sm border border-blue-400/30 hover:border-blue-400/60 transition-all"
-                  >
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10"
-                      animate={{
-                        x: ["-100%", "100%"],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                    />
-                    <div className="relative flex items-center gap-3">
-                      <motion.div
-                        className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 shadow-lg"
-                        animate={{
-                          rotate: [0, 10, -10, 0],
-                          scale: [1, 1.1, 1],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        <Crown className="h-6 w-6 text-white" />
-                      </motion.div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-white">Admin</h3>
-                          <motion.div
-                            animate={{ rotate: [0, 360] }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              ease: "linear",
-                            }}
-                          >
-                            <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                          </motion.div>
-                        </div>
-                        <p className="text-xs text-blue-200">
-                          test@example.com
-                        </p>
-                      </div>
-                      <motion.div
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                      >
-                        <CheckCircle2 className="h-5 w-5 text-blue-400" />
-                      </motion.div>
-                    </div>
-                  </motion.div>
-
-                  {/* HR Role Card */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.0 }}
-                    whileHover={{ scale: 1.02, x: 5 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={async () => {
-                      await setValue("email", "hr@example.com", {
-                        shouldValidate: true,
-                      });
-                      await setValue("password", "password123", {
-                        shouldValidate: true,
-                      });
-                      trigger();
-                    }}
-                    className="group relative cursor-pointer overflow-hidden rounded-xl bg-gradient-to-r from-teal-600/20 to-cyan-600/20 p-4 backdrop-blur-sm border border-teal-400/30 hover:border-teal-400/60 transition-all"
-                  >
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-teal-600/10 to-cyan-600/10"
-                      animate={{
-                        x: ["100%", "-100%"],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                    />
-                    <div className="relative flex items-center gap-3">
-                      <motion.div
-                        className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 shadow-lg"
-                        animate={{
-                          y: [0, -10, 0],
-                          scale: [1, 1.05, 1],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        <Users className="h-6 w-6 text-white" />
-                      </motion.div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-white">HR Manager</h3>
-                          <motion.div
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
-                          >
-                            <Sparkles className="h-4 w-4 text-cyan-300" />
-                          </motion.div>
-                        </div>
-                        <p className="text-xs text-teal-200">hr@example.com</p>
-                      </div>
-                      <motion.div
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          delay: 0.3,
-                        }}
-                      >
-                        <CheckCircle2 className="h-5 w-5 text-teal-400" />
-                      </motion.div>
-                    </div>
-                  </motion.div>
-
-                  {/* User Role Card */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.1 }}
-                    whileHover={{ scale: 1.02, x: 5 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={async () => {
-                      await setValue("email", "user@example.com", {
-                        shouldValidate: true,
-                      });
-                      await setValue("password", "password123", {
-                        shouldValidate: true,
-                      });
-                      trigger();
-                    }}
-                    className="group relative cursor-pointer overflow-hidden rounded-xl bg-gradient-to-r from-pink-600/20 to-rose-600/20 p-4 backdrop-blur-sm border border-pink-400/30 hover:border-pink-400/60 transition-all"
-                  >
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-pink-600/10 to-rose-600/10"
-                      animate={{
-                        x: ["-100%", "100%"],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                    />
-                    <div className="relative flex items-center gap-3">
-                      <motion.div
-                        className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 shadow-lg"
-                        animate={{
-                          rotate: [0, -10, 10, 0],
-                          scale: [1, 1.08, 1],
-                        }}
-                        transition={{
-                          duration: 2.5,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        <UserCircle className="h-6 w-6 text-white" />
-                      </motion.div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-white">User</h3>
-                          <motion.div
-                            animate={{ rotate: [0, 180, 360] }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              ease: "linear",
-                            }}
-                          >
-                            <Zap className="h-4 w-4 text-yellow-300" />
-                          </motion.div>
-                        </div>
-                        <p className="text-xs text-pink-200">
-                          user@example.com
-                        </p>
-                      </div>
-                      <motion.div
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          delay: 0.6,
-                        }}
-                      >
-                        <CheckCircle2 className="h-5 w-5 text-pink-400" />
-                      </motion.div>
-                    </div>
-                  </motion.div>
-                </motion.div>
               </CardContent>
             </Card>
 

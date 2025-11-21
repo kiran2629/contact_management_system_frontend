@@ -7,15 +7,18 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
-  user: {
-    id: number;
+  success: boolean;
+  message: string;
+  accessToken: string;
+  refreshToken: string;
+  user?: {
+    id: number | string;
     username: string;
     role: "Admin" | "HR" | "User";
     allowed_categories: string[];
-    name: string;
-    email: string;
-    avatar: string;
+    name?: string;
+    email?: string;
+    avatar?: string;
   };
 }
 
@@ -51,7 +54,10 @@ export const authApi = createApi({
         if (user) {
           return {
             data: {
-              token: `mock-jwt-token-${user.id}-${Date.now()}`,
+              success: true,
+              message: "Login successful",
+              accessToken: `mock-jwt-token-${user.id}-${Date.now()}`,
+              refreshToken: `mock-refresh-token-${user.id}-${Date.now()}`,
               user: {
                 id: parseInt(user.id),
                 username: user.username,
@@ -110,8 +116,4 @@ export const authApi = createApi({
   }),
 });
 
-export const {
-  useLoginMutation,
-  useLogoutMutation,
-  useGetMeQuery,
-} = authApi;
+export const { useLoginMutation, useLogoutMutation, useGetMeQuery } = authApi;
