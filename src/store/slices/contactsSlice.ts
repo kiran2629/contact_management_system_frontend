@@ -1,5 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import contactsData from '../../mock/contacts.json';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import contactsData from "../../mock/contacts.json";
 
 interface Contact {
   id: string;
@@ -7,16 +7,16 @@ interface Contact {
   email: string;
   phone: string;
   company: string;
-  position: string;
+  position?: string;
   categories: string[];
-  birthday: string;
-  linkedinUrl: string;
-  address: string;
-  notes: string;
+  birthday?: string;
+  linkedinUrl?: string;
+  address?: string;
+  notes?: string;
   created_at: string;
   created_by: string;
-  updated_at: string;
-  tags: string[];
+  updated_at?: string;
+  tags?: string[];
 }
 
 interface ContactsState {
@@ -30,7 +30,7 @@ const initialState: ContactsState = {
 };
 
 const contactsSlice = createSlice({
-  name: 'contacts',
+  name: "contacts",
   initialState,
   reducers: {
     setContacts: (state, action: PayloadAction<Contact[]>) => {
@@ -40,16 +40,17 @@ const contactsSlice = createSlice({
       state.contacts.push(action.payload);
     },
     updateContact: (state, action: PayloadAction<Contact>) => {
-      const index = state.contacts.findIndex(c => c.id === action.payload.id);
+      const index = state.contacts.findIndex((c) => c.id === action.payload.id);
       if (index !== -1) {
         state.contacts[index] = action.payload;
       }
     },
     deleteContact: (state, action: PayloadAction<string>) => {
-      state.contacts = state.contacts.filter(c => c.id !== action.payload);
+      state.contacts = state.contacts.filter((c) => c.id !== action.payload);
     },
   },
 });
 
-export const { setContacts, addContact, updateContact, deleteContact } = contactsSlice.actions;
+export const { setContacts, addContact, updateContact, deleteContact } =
+  contactsSlice.actions;
 export default contactsSlice.reducer;

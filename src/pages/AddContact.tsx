@@ -51,6 +51,7 @@ import {
   Save,
   Sparkles,
   Edit3,
+  FileText,
 } from "lucide-react";
 
 // Categories list
@@ -103,6 +104,7 @@ const addContactSchema = z.object({
     }),
   address: z.string().min(5, "Address must be at least 5 characters"),
   tags: z.array(z.string()).optional().default([]),
+  notes: z.string().optional().default(""),
 });
 
 type AddContactForm = z.infer<typeof addContactSchema>;
@@ -133,6 +135,7 @@ const AddContact = () => {
       linkedinUrl: "",
       address: "",
       tags: [],
+      notes: "",
     },
   });
 
@@ -149,6 +152,7 @@ const AddContact = () => {
         linkedinUrl: existingContact.linkedinUrl,
         address: existingContact.address,
         tags: existingContact.tags || [],
+        notes: existingContact.notes || "",
       });
     }
   }, [existingContact, form]);
@@ -166,18 +170,19 @@ const AddContact = () => {
         linkedinUrl: data.linkedinUrl,
         address: data.address,
         tags: data.tags || [],
+        notes: data.notes || "",
       };
 
       if (isEditMode && id) {
         // Update existing contact
         const result = await updateContactMutation({
-          id,
+          id: Number(id),
           data: formattedData,
         }).unwrap();
 
         // Also update Redux store for immediate UI update
         if (result) {
-          dispatch(updateContact(result));
+          dispatch(updateContact({ ...result, id: String(result.id) } as any));
         }
 
         toast.success("Contact updated successfully!");
@@ -187,7 +192,7 @@ const AddContact = () => {
 
         // Also update Redux store for immediate UI update
         if (result) {
-          dispatch(addContact(result));
+          dispatch(addContact({ ...result, id: String(result.id) } as any));
         }
 
         toast.success("Contact created successfully!");
@@ -234,7 +239,11 @@ const AddContact = () => {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-2xl blur-xl opacity-50" />
               <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
-                {isEditMode ? <Edit3 className="w-8 h-8 text-white" /> : <Sparkles className="w-8 h-8 text-white" />}
+                {isEditMode ? (
+                  <Edit3 className="w-8 h-8 text-white" />
+                ) : (
+                  <Sparkles className="w-8 h-8 text-white" />
+                )}
               </div>
             </motion.div>
 
@@ -259,7 +268,7 @@ const AddContact = () => {
           className="relative group"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 rounded-3xl blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10" />
-          
+
           <Card className="glass-card shadow-2xl border-2 border-border/30 rounded-3xl overflow-hidden">
             <CardHeader className="border-b-2 border-border/20 pb-6 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5">
               <CardTitle className="text-2xl font-bold flex items-center gap-2">
@@ -267,7 +276,8 @@ const AddContact = () => {
                 Contact Information
               </CardTitle>
               <CardDescription className="text-base">
-                Fill in all required fields marked with <span className="text-destructive font-bold">*</span>
+                Fill in all required fields marked with{" "}
+                <span className="text-destructive font-bold">*</span>
               </CardDescription>
             </CardHeader>
 
@@ -392,7 +402,8 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
                               <Tags className="h-4 w-4 text-secondary" />
                             </div>
-                            Categories <span className="text-destructive">*</span>
+                            Categories{" "}
+                            <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Controller
@@ -454,7 +465,8 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
                               <Linkedin className="h-4 w-4 text-blue-500" />
                             </div>
-                            LinkedIn URL <span className="text-destructive">*</span>
+                            LinkedIn URL{" "}
+                            <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -498,11 +510,9 @@ const AddContact = () => {
                       name="tags"
                       render={({ field }) => (
                         <FormItem className="md:col-span-2">
-                          <FormLabel className="flex items-center gap-2 font-bold text-base">
-                            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                              <Tags className="h-4 w-4 text-accent" />
-                            </div>
-                            Tags <span className="text-muted-foreground font-normal">(Optional)</span>
+                          <FormLabel className="flex items-center gap-2">
+                            <Tags className="h-4 w-4" />
+                            Tags
                           </FormLabel>
                           <FormControl>
                             <Controller
@@ -525,7 +535,10 @@ const AddContact = () => {
 
                   {/* Action Buttons */}
                   <div className="flex flex-col-reverse gap-4 pt-6 sm:flex-row sm:justify-end border-t-2 border-border/20">
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
                       <Button
                         type="button"
                         variant="outline"
@@ -536,7 +549,10 @@ const AddContact = () => {
                       </Button>
                     </motion.div>
 
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
                       <Button
                         type="submit"
                         disabled={isLoading}
@@ -544,7 +560,7 @@ const AddContact = () => {
                       >
                         {/* Shimmer effect */}
                         <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 animate-shimmer" />
-                        
+
                         {isLoading ? (
                           <>
                             <ButtonLoader size={20} />

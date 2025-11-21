@@ -1,6 +1,6 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { baseQuery } from './api';
-import usersData from '../../mock/users.json';
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { fakeBaseQuery } from "@reduxjs/toolkit/query";
+import usersData from "../../mock/users.json";
 
 export interface LoginRequest {
   username: string;
@@ -12,7 +12,7 @@ export interface LoginResponse {
   user: {
     id: number;
     username: string;
-    role: 'Admin' | 'HR' | 'User';
+    role: "Admin" | "HR" | "User";
     allowed_categories: string[];
     name: string;
     email: string;
@@ -24,7 +24,7 @@ export interface UserResponse {
   user: {
     id: number;
     username: string;
-    role: 'Admin' | 'HR' | 'User';
+    role: "Admin" | "HR" | "User";
     allowed_categories: string[];
     name: string;
     email: string;
@@ -32,106 +32,83 @@ export interface UserResponse {
   };
 }
 
-// Check if we should use mock data (backend not available)
-const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH !== 'false';
-
-// Mock base query for local development
-const mockBaseQuery = fetchBaseQuery({
-  baseUrl: '/',
-  // Simulate API delay
-  fetchFn: async (...args) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return fetch(...args);
-  },
-});
-
 export const authApi = createApi({
-  reducerPath: 'authApi',
-  baseQuery: USE_MOCK_AUTH ? mockBaseQuery : baseQuery,
-  tagTypes: ['Auth'],
+  reducerPath: "authApi",
+  baseQuery: fakeBaseQuery(),
+  tagTypes: ["Auth"],
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
-      queryFn: USE_MOCK_AUTH
-        ? async (credentials) => {
-            // Mock authentication logic
-            await new Promise(resolve => setTimeout(resolve, 800));
-            
-            const user = usersData.find(
-              u => u.username === credentials.username && 
-                   u.password === credentials.password &&
-                   u.status === 'active'
-            );
+      queryFn: async (credentials) => {
+        // Mock authentication logic
+        await new Promise((resolve) => setTimeout(resolve, 800));
 
-            if (user) {
-              const { password, status, created_at, last_login, ...userWithoutSensitive } = user;
-              return {
-                data: {
-                  token: `mock-jwt-token-${user.id}-${Date.now()}`,
-                  user: {
-                    id: parseInt(user.id),
-                    username: user.username,
-                    role: user.role,
-                    allowed_categories: user.allowed_categories,
-                    name: user.name,
-                    email: user.email,
-                    avatar: user.avatar,
-                  },
-                },
-              };
-            }
+        const user = usersData.find(
+          (u) =>
+            u.username === credentials.username &&
+            u.password === credentials.password &&
+            u.status === "active"
+        );
 
-            return {
-              error: {
-                status: 401,
-                data: { error: 'Invalid credentials or inactive account' },
+        if (user) {
+          return {
+            data: {
+              token: `mock-jwt-token-${user.id}-${Date.now()}`,
+              user: {
+                id: parseInt(user.id),
+                username: user.username,
+                role: user.role as "Admin" | "HR" | "User",
+                allowed_categories: user.allowed_categories,
+                name: user.name,
+                email: user.email,
+                avatar: user.avatar,
               },
-            };
-          }
-        : undefined,
-      query: !USE_MOCK_AUTH
-        ? (credentials) => ({
-            url: '/auth/login',
-            method: 'POST',
-            body: credentials,
-          })
-        : undefined,
+            },
+          };
+        }
+
+        return {
+          error: {
+            status: "CUSTOM_ERROR" as const,
+            error: "Invalid credentials or inactive account",
+          },
+        };
+      },
     }),
     logout: builder.mutation<{ success: boolean }, void>({
-      queryFn: USE_MOCK_AUTH
-        ? async () => {
-            await new Promise(resolve => setTimeout(resolve, 300));
-            return { data: { success: true } };
-          }
-        : undefined,
-      query: !USE_MOCK_AUTH
-        ? () => ({
-            url: '/auth/logout',
-            method: 'POST',
-          })
-        : undefined,
+      queryFn: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return { data: { success: true } };
+      },
     }),
     getMe: builder.query<UserResponse, void>({
-      queryFn: USE_MOCK_AUTH
-        ? async () => {
-            const storedUser = localStorage.getItem('crm_user');
-            if (storedUser) {
-              return { data: { user: JSON.parse(storedUser) } };
-            }
-            return {
-              error: {
-                status: 401,
-                data: { error: 'Not authenticated' },
+      queryFn: async () => {
+        const storedUser = localStorage.getItem("crm_user");
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          return {
+            data: {
+              user: {
+                id: user.id,
+                username: user.username,
+                role: user.role as "Admin" | "HR" | "User",
+                allowed_categories: user.allowed_categories,
+                name: user.name,
+                email: user.email,
+                avatar: user.avatar,
               },
-            };
-          }
-        : undefined,
-      query: !USE_MOCK_AUTH ? () => '/auth/me' : undefined,
-      providesTags: ['Auth'],
+            },
+          };
+        }
+        return {
+          error: {
+            status: "CUSTOM_ERROR" as const,
+            error: "Not authenticated",
+          },
+        };
+      },
+      providesTags: ["Auth"],
     }),
   }),
 });
 
 export const { useLoginMutation, useLogoutMutation, useGetMeQuery } = authApi;
-
-
-

@@ -5,7 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { RootState } from "@/store/store";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useGetContactByIdQuery, useDeleteContactMutation } from "@/store/services/contactsApi";
+import {
+  useGetContactByIdQuery,
+  useDeleteContactMutation,
+} from "@/store/services/contactsApi";
 import { LayoutRouter } from "@/components/layout/LayoutRouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,17 +40,23 @@ import {
   Tag,
   Clock,
   Sparkles,
-} from 'lucide-react';
- 
+  FileText,
+} from "lucide-react";
+
 const ContactDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { canAccess } = usePermissions();
-  const [deleteContactMutation, { isLoading: isDeleting }] = useDeleteContactMutation();
+  const [deleteContactMutation, { isLoading: isDeleting }] =
+    useDeleteContactMutation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  
+
   // Fetch contact from API
-  const { data: contact, isLoading, error } = useGetContactByIdQuery(Number(id || 0), {
+  const {
+    data: contact,
+    isLoading,
+    error,
+  } = useGetContactByIdQuery(Number(id || 0), {
     skip: !id,
   });
 
@@ -60,7 +69,9 @@ const ContactDetails = () => {
       navigate("/contacts");
     } catch (error: any) {
       toast.error(
-        error?.data?.message || error?.data?.error || "Failed to delete contact. Please try again."
+        error?.data?.message ||
+          error?.data?.error ||
+          "Failed to delete contact. Please try again."
       );
     }
   };
@@ -84,7 +95,9 @@ const ContactDetails = () => {
               <Sparkles className="h-8 w-8 text-primary animate-pulse" />
             </div>
           </div>
-          <p className="text-muted-foreground mt-6 text-lg font-medium">Loading contact details...</p>
+          <p className="text-muted-foreground mt-6 text-lg font-medium">
+            Loading contact details...
+          </p>
         </div>
       </LayoutRouter>
     );
@@ -102,7 +115,10 @@ const ContactDetails = () => {
             <p className="text-muted-foreground mb-6">
               The contact you're looking for doesn't exist or has been removed.
             </p>
-            <Button onClick={() => navigate("/contacts")} className="rounded-xl">
+            <Button
+              onClick={() => navigate("/contacts")}
+              className="rounded-xl"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Contacts
             </Button>
@@ -111,7 +127,7 @@ const ContactDetails = () => {
       </LayoutRouter>
     );
   }
- 
+
   return (
     <LayoutRouter>
       <div className="space-y-6 max-w-5xl mx-auto">
@@ -125,7 +141,7 @@ const ContactDetails = () => {
           <motion.div whileHover={{ x: -4 }} whileTap={{ scale: 0.95 }}>
             <Button
               variant="ghost"
-              onClick={() => navigate('/contacts')}
+              onClick={() => navigate("/contacts")}
               className="glass-card border-2 border-border/30 hover:border-primary transition-all rounded-xl px-6 py-6 font-semibold"
             >
               <ArrowLeft className="mr-2 h-5 w-5" />
@@ -135,7 +151,10 @@ const ContactDetails = () => {
 
           {canAccess("edit_contact") && (
             <div className="flex gap-3">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
                 <Button
                   variant="outline"
                   size="icon"
@@ -146,9 +165,12 @@ const ContactDetails = () => {
                 </Button>
               </motion.div>
 
-              {canAccess('delete_contact') && (
+              {canAccess("delete_contact") && (
                 <>
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
                     <Button
                       variant="destructive"
                       size="icon"
@@ -159,17 +181,30 @@ const ContactDetails = () => {
                     </Button>
                   </motion.div>
 
-                  <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                  <AlertDialog
+                    open={showDeleteDialog}
+                    onOpenChange={setShowDeleteDialog}
+                  >
                     <AlertDialogContent className="glass-card border-2">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="text-2xl">Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-2xl">
+                          Are you absolutely sure?
+                        </AlertDialogTitle>
                         <AlertDialogDescription className="text-base">
-                          This action cannot be undone. This will permanently delete the contact
-                          <strong className="text-foreground"> {contact?.name}</strong> and all associated data.
+                          This action cannot be undone. This will permanently
+                          delete the contact
+                          <strong className="text-foreground">
+                            {" "}
+                            {contact?.name}
+                          </strong>{" "}
+                          and all associated data.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting} className="rounded-xl">
+                        <AlertDialogCancel
+                          disabled={isDeleting}
+                          className="rounded-xl"
+                        >
                           Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
@@ -187,7 +222,7 @@ const ContactDetails = () => {
             </div>
           )}
         </motion.div>
- 
+
         {/* 🎨 Main Contact Card */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -197,14 +232,17 @@ const ContactDetails = () => {
         >
           {/* Animated glow */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 rounded-3xl blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10" />
-          
+
           <Card className="glass-card border-2 border-border/30 shadow-2xl overflow-hidden rounded-3xl">
             {/* ✨ Premium Header */}
             <CardHeader className="relative border-b-2 border-border/20 pb-8 pt-8">
               {/* Background gradient */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
-              <div className="absolute inset-0 animate-gradient bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-50" style={{ backgroundSize: '200% 200%' }} />
-              
+              <div
+                className="absolute inset-0 animate-gradient bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-50"
+                style={{ backgroundSize: "200% 200%" }}
+              />
+
               <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6">
                 {/* Avatar */}
                 <motion.div
@@ -235,7 +273,7 @@ const ContactDetails = () => {
                   </motion.div>
 
                   {/* Categories */}
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
@@ -249,9 +287,7 @@ const ContactDetails = () => {
                         transition={{ delay: 0.5 + idx * 0.1, type: "spring" }}
                         whileHover={{ scale: 1.1, rotate: 5 }}
                       >
-                        <Badge
-                          className="bg-gradient-to-r from-primary/30 to-secondary/30 border-2 border-primary/40 text-primary font-bold px-4 py-2 text-base rounded-full shadow-lg hover:shadow-glow transition-all"
-                        >
+                        <Badge className="bg-gradient-to-r from-primary/30 to-secondary/30 border-2 border-primary/40 text-primary font-bold px-4 py-2 text-base rounded-full shadow-lg hover:shadow-glow transition-all">
                           <Tag className="mr-1.5 h-4 w-4" />
                           {category}
                         </Badge>
@@ -275,7 +311,10 @@ const ContactDetails = () => {
                           transition={{ delay: 0.7 + idx * 0.05 }}
                           whileHover={{ scale: 1.1 }}
                         >
-                          <Badge variant="outline" className="rounded-full border-2">
+                          <Badge
+                            variant="outline"
+                            className="rounded-full border-2"
+                          >
                             #{tag}
                           </Badge>
                         </motion.div>
@@ -297,7 +336,7 @@ const ContactDetails = () => {
                   <Globe className="h-6 w-6 text-primary" />
                   Contact Information
                 </h3>
-                
+
                 <div className="grid gap-4 md:grid-cols-2">
                   {/* Email */}
                   <motion.a
@@ -309,8 +348,12 @@ const ContactDetails = () => {
                       <Mail className="h-6 w-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Email</p>
-                      <p className="font-bold text-lg group-hover/item:text-primary transition-colors truncate">{contact.email}</p>
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                        Email
+                      </p>
+                      <p className="font-bold text-lg group-hover/item:text-primary transition-colors truncate">
+                        {contact.email}
+                      </p>
                     </div>
                   </motion.a>
 
@@ -324,8 +367,12 @@ const ContactDetails = () => {
                       <Phone className="h-6 w-6 text-secondary" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Phone</p>
-                      <p className="font-bold text-lg group-hover/item:text-secondary transition-colors">{contact.phone}</p>
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                        Phone
+                      </p>
+                      <p className="font-bold text-lg group-hover/item:text-secondary transition-colors">
+                        {contact.phone}
+                      </p>
                     </div>
                   </motion.a>
 
@@ -338,8 +385,12 @@ const ContactDetails = () => {
                       <Building2 className="h-6 w-6 text-accent" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Company</p>
-                      <p className="font-bold text-lg group-hover/item:text-accent transition-colors truncate">{contact.company}</p>
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                        Company
+                      </p>
+                      <p className="font-bold text-lg group-hover/item:text-accent transition-colors truncate">
+                        {contact.company}
+                      </p>
                     </div>
                   </motion.div>
 
@@ -353,8 +404,12 @@ const ContactDetails = () => {
                         <Briefcase className="h-6 w-6 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Position</p>
-                        <p className="font-bold text-lg group-hover/item:text-primary transition-colors truncate">{contact.position}</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                          Position
+                        </p>
+                        <p className="font-bold text-lg group-hover/item:text-primary transition-colors truncate">
+                          {contact.position}
+                        </p>
                       </div>
                     </motion.div>
                   )}
@@ -385,8 +440,12 @@ const ContactDetails = () => {
                         <MapPin className="h-5 w-5 text-secondary" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Address</p>
-                        <p className="font-semibold text-lg">{contact.address}</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                          Address
+                        </p>
+                        <p className="font-semibold text-lg">
+                          {contact.address}
+                        </p>
                       </div>
                     </motion.div>
                   )}
@@ -404,8 +463,12 @@ const ContactDetails = () => {
                         <Linkedin className="h-5 w-5 text-blue-500" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">LinkedIn Profile</p>
-                        <p className="font-semibold text-blue-500 group-hover/link:underline truncate">{contact.linkedinUrl}</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                          LinkedIn Profile
+                        </p>
+                        <p className="font-semibold text-blue-500 group-hover/link:underline truncate">
+                          {contact.linkedinUrl}
+                        </p>
                       </div>
                       <ExternalLink className="h-5 w-5 text-muted-foreground opacity-0 group-hover/link:opacity-100 transition-opacity" />
                     </motion.a>
@@ -421,14 +484,40 @@ const ContactDetails = () => {
                         <Calendar className="h-5 w-5 text-accent" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Birthday</p>
-                        <p className="font-semibold text-lg">{new Date(contact.birthday).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                          Birthday
+                        </p>
+                        <p className="font-semibold text-lg">
+                          {new Date(contact.birthday).toLocaleDateString(
+                            "en-US",
+                            { year: "numeric", month: "long", day: "numeric" }
+                          )}
+                        </p>
                       </div>
                     </motion.div>
                   )}
                 </div>
               </motion.div>
 
+              {/* Notes Section */}
+              {contact.notes && (
+                <>
+                  <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
+                  <div className="p-4 rounded-xl border-2 border-border/30 bg-muted/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Notes
+                      </p>
+                    </div>
+                    <p className="text-foreground whitespace-pre-wrap">
+                      {contact.notes}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Metadata */}
               <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
 
               {/* 🕒 Metadata */}
@@ -442,12 +531,12 @@ const ContactDetails = () => {
                   <Clock className="h-5 w-5" />
                   <span className="font-semibold">Created:</span>
                   <span className="font-bold text-foreground">
-                    {new Date(contact.created_at).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
+                    {new Date(contact.created_at).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </span>
                 </div>
@@ -459,5 +548,5 @@ const ContactDetails = () => {
     </LayoutRouter>
   );
 };
- 
+
 export default ContactDetails;

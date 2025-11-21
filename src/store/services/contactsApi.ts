@@ -1,56 +1,85 @@
-import { createApi } from '@reduxjs/toolkit/query/react';
-import { baseQuery } from './api';
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./api";
 
 export interface Contact {
-  id: number;
+  id: number | string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  position?: string;
+  categories: string[];
+  birthday?: string;
+  linkedinUrl?: string;
+  address?: string;
+  notes?: string;
+  tags?: string[];
+  created_at: string;
+  created_by: number | string;
+  updated_at?: string;
+}
+
+export interface CreateContactInput {
   name: string;
   email: string;
   phone: string;
   company: string;
   categories: string[];
-  created_at: string;
-  created_by: number;
+  birthday: string;
+  linkedinUrl: string;
+  address: string;
+  tags?: string[];
+  notes?: string;
 }
 
 export const contactsApi = createApi({
-  reducerPath: 'contactsApi',
+  reducerPath: "contactsApi",
   baseQuery,
-  tagTypes: ['Contacts'],
+  tagTypes: ["Contacts"],
   endpoints: (builder) => ({
     getContacts: builder.query<Contact[], void>({
-      query: () => '/contacts',
-      providesTags: ['Contacts'],
+      query: () => "/contacts",
+      providesTags: ["Contacts"],
     }),
     getContactById: builder.query<Contact, number>({
       query: (id) => `/contacts/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Contacts', id }],
+      providesTags: (result, error, id) => [{ type: "Contacts", id }],
     }),
     searchContacts: builder.query<Contact[], string>({
       query: (query) => `/contacts/search?q=${encodeURIComponent(query)}`,
-      providesTags: ['Contacts'],
+      providesTags: ["Contacts"],
     }),
-    createContact: builder.mutation<Contact, Omit<Contact, 'id' | 'created_at' | 'created_by'>>({
+    createContact: builder.mutation<
+      Contact,
+      Omit<Contact, "id" | "created_at" | "created_by">
+    >({
       query: (contact) => ({
-        url: '/contacts',
-        method: 'POST',
+        url: "/contacts",
+        method: "POST",
         body: contact,
       }),
-      invalidatesTags: ['Contacts'],
+      invalidatesTags: ["Contacts"],
     }),
-    updateContact: builder.mutation<Contact, { id: number; data: Partial<Contact> }>({
+    updateContact: builder.mutation<
+      Contact,
+      { id: number; data: Partial<Contact> }
+    >({
       query: ({ id, data }) => ({
         url: `/contacts/${id}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Contacts', id }, 'Contacts'],
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Contacts", id },
+        "Contacts",
+      ],
     }),
     deleteContact: builder.mutation<{ success: boolean }, number>({
       query: (id) => ({
         url: `/contacts/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
-      invalidatesTags: ['Contacts'],
+      invalidatesTags: ["Contacts"],
     }),
   }),
 });
