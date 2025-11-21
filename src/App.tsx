@@ -15,6 +15,7 @@ import { PremiumLoader } from '@/components/loaders/PremiumLoader';
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Contacts = lazy(() => import('./pages/Contacts'));
+const AddContact = lazy(() => import('./pages/AddContact'));
 const ContactDetails = lazy(() => import('./pages/ContactDetails'));
 const ActivityLogs = lazy(() => import('./pages/ActivityLogs'));
 const Profile = lazy(() => import('./pages/Profile'));
@@ -62,6 +63,15 @@ const AppContent = () => {
           element={
             <ProtectedRoute requiredPermission="view_contacts">
               <Contacts />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/contacts/new"
+          element={
+            <ProtectedRoute requiredPermission="create_contact">
+              <AddContact />
             </ProtectedRoute>
           }
         />
