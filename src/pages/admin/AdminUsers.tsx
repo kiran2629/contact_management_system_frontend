@@ -7,6 +7,7 @@ import * as z from "zod";
 import { RootState } from "@/store/store";
 import { updateUser, deleteUser, addUser } from "@/store/slices/usersSlice";
 import {
+  useGetUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
   useDeleteUserMutation,
@@ -169,7 +170,7 @@ const getGenderIcon = (gender?: string) => {
 
 const AdminUsers = () => {
   const dispatch = useDispatch();
-  const { users } = useSelector((state: RootState) => state.users);
+  const { data: usersData, isLoading, error } = useGetUsersQuery();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -184,6 +185,9 @@ const AdminUsers = () => {
     useUpdateUserMutation();
   const [deleteUserMutation, { isLoading: isDeleting }] =
     useDeleteUserMutation();
+
+  // Ensure users is always an array, even if API returns error or undefined
+  const users = Array.isArray(usersData) ? usersData : [];
 
   const addForm = useForm<AddUserForm>({
     resolver: zodResolver(addUserSchema),
@@ -261,7 +265,7 @@ const AdminUsers = () => {
 
       // Also update Redux store for immediate UI update
       if (result) {
-        dispatch(addUser(result));
+        dispatch(addUser(result as any));
       }
 
       toast.success("User created successfully!");
@@ -319,7 +323,7 @@ const AdminUsers = () => {
 
       // Also update Redux store for immediate UI update
       if (result) {
-        dispatch(updateUser(result));
+        dispatch(updateUser(result as any));
       }
 
       toast.success("User updated successfully!");
@@ -369,14 +373,6 @@ const AdminUsers = () => {
     setShowDeleteDialog(true);
   };
 
-  const handleStatusToggle = (user: any) => {
-    const newStatus = user.status === "active" ? "inactive" : "active";
-    dispatch(updateUser({ ...user, status: newStatus }));
-    toast.success(
-      `User ${newStatus === "active" ? "activated" : "deactivated"}`
-    );
-  };
-
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case "Admin":
@@ -389,6 +385,39 @@ const AdminUsers = () => {
         return "";
     }
   };
+
+  if (isLoading) {
+    return (
+      <LayoutRouter>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading users...</p>
+          </div>
+        </div>
+      </LayoutRouter>
+    );
+  }
+
+  if (error) {
+    return (
+      <LayoutRouter>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Users className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <p className="text-destructive mb-2 font-semibold">
+              Failed to load users
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {error && "data" in error
+                ? (error.data as any)?.message || "An error occurred"
+                : "Please try again later"}
+            </p>
+          </div>
+        </div>
+      </LayoutRouter>
+    );
+  }
 
   return (
     <LayoutRouter>
@@ -531,13 +560,6 @@ const AdminUsers = () => {
                     >
                       {user.status}
                     </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleStatusToggle(user)}
-                    >
-                      {user.status === "active" ? "Deactivate" : "Activate"}
-                    </Button>
                   </div>
 
                   <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">

@@ -36,6 +36,8 @@ const AppContent = () => {
   useEffect(() => {
     dispatch(initializeAuth());
     dispatch(setTheme(mode));
+    // Set document title
+    document.title = "CRM";
   }, [dispatch]);
 
   if (loading) {
@@ -89,7 +91,7 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/contacts/:id"
           element={

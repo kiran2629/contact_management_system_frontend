@@ -126,9 +126,6 @@ const Login = () => {
           data.email.split("@")[0],
         email: decodedToken.email || data.email,
         avatar: "",
-        name: user.name || user.username,
-        email: user.email || "",
-        avatar: user.avatar || "",
       };
 
       // Store credentials
@@ -141,6 +138,19 @@ const Login = () => {
 
       // Store refresh token in localStorage
       localStorage.setItem("crm_refresh_token", result.refreshToken);
+
+      // Set refresh token as a cookie so backend can read it from req.cookies.refreshToken
+      // The backend VerifyJwtToken middleware expects refreshToken in cookies
+      // For cross-origin requests (different ports), we need to ensure the cookie is accessible
+      // Note: Cookies set via document.cookie are subject to same-origin policy
+      // The backend should also set cookies during login, which will be sent automatically with credentials: "include"
+      const cookieOptions = [
+        `refreshToken=${result.refreshToken}`,
+        "path=/",
+        "SameSite=Lax", // For localhost, Lax should work. For production, might need SameSite=None; Secure
+        `max-age=${7 * 24 * 60 * 60}`, // 7 days
+      ].join("; ");
+      document.cookie = cookieOptions;
 
       logActivity("login", { ip: "192.168.1.1", device: "Desktop" });
       toast.success(`Welcome back, ${userData.name || userData.username}!`);

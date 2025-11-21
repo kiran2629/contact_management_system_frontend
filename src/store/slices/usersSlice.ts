@@ -4,7 +4,7 @@ import usersData from "../../mock/users.json";
 interface User {
   id: string;
   username: string;
-  password: string;
+  password?: string;
   email: string;
   role: "Admin" | "HR" | "User";
   allowed_categories: string[];

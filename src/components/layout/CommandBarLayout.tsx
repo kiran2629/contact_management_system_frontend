@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { motion, AnimatePresence } from 'framer-motion';
-import { RootState } from '@/store/store';
-import { logout } from '@/store/slices/authSlice';
-import { toggleTheme } from '@/store/slices/themeSlice';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { motion, AnimatePresence } from "framer-motion";
+import { RootState } from "@/store/store";
+import { logout } from "@/store/slices/authSlice";
+import { toggleTheme } from "@/store/slices/themeSlice";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard,
   Users,
@@ -22,70 +22,88 @@ import {
   UserCircle,
   Sparkles,
   Zap,
-} from 'lucide-react';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { toast } from "sonner";
 
-export const CommandBarLayout = ({ children }: { children: React.ReactNode }) => {
+export const CommandBarLayout = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const { mode } = useSelector((state: RootState) => state.theme);
   const [commandOpen, setCommandOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', shortcut: 'D', desc: 'Overview of your CRM' },
-    { icon: Users, label: 'Contacts', path: '/contacts', shortcut: 'C', desc: 'Manage your contacts' },
-    { icon: Activity, label: 'Activity', path: '/activity-logs', shortcut: 'A', desc: 'View system activity' },
-    { icon: Settings, label: 'Settings', path: '/settings', shortcut: 'S', desc: 'Customize preferences' },
-    { icon: UserCircle, label: 'Profile', path: '/profile', shortcut: 'P', desc: 'Your account details' },
-    ...(user?.role === 'Admin' ? [
-      { icon: Shield, label: 'Admin', path: '/admin/users', shortcut: 'X', desc: 'System administration' },
-    ] : []),
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", shortcut: "D", desc: "Overview of your CRM" },
+    { icon: Users, label: "Contacts", path: "/contacts", shortcut: "C", desc: "Manage your contacts" },
+    { icon: Activity, label: "Activity", path: "/activity-logs", shortcut: "A", desc: "View system activity" },
+    { icon: Settings, label: "Settings", path: "/settings", shortcut: "S", desc: "Customize preferences" },
+    { icon: UserCircle, label: "Profile", path: "/profile", shortcut: "P", desc: "Your account details" },
+    ...(user?.role === "Admin"
+      ? [
+          { icon: Shield, label: "Admin", path: "/admin/users", shortcut: "X", desc: "System administration" },
+        ]
+      : []),
   ];
 
   const actions = [
-    { icon: Moon, label: 'Toggle Theme', action: () => dispatch(toggleTheme()), shortcut: 'T' },
-    { icon: LogOut, label: 'Logout', action: handleLogout, shortcut: 'L', destructive: true },
+    {
+      icon: Moon,
+      label: "Toggle Theme",
+      action: () => dispatch(toggleTheme()),
+      shortcut: "T",
+    },
+    {
+      icon: LogOut,
+      label: "Logout",
+      action: handleLogout,
+      shortcut: "L",
+      destructive: true,
+    },
   ];
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   function handleLogout() {
     dispatch(logout());
-    toast.success('Logged out successfully');
+    toast.success("Logged out successfully");
     setCommandOpen(false);
   }
 
-  const filteredItems = navItems.filter(item =>
+  const filteredItems = navItems.filter((item) =>
     item.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredActions = actions.filter(action =>
+  const filteredActions = actions.filter((action) =>
     action.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Get current page info
-  const currentPage = navItems.find(item => isActive(item.path)) || navItems[0];
+  const currentPage = navItems.find((item) => isActive(item.path)) || navItems[0];
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd+K or Ctrl+K to open command palette
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setCommandOpen(prev => !prev);
+        setCommandOpen((prev) => !prev);
       }
 
       // Escape to close
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setCommandOpen(false);
       }
 
       // Quick navigation shortcuts (when command palette is closed)
       if (!commandOpen && (e.metaKey || e.ctrlKey)) {
-        const item = navItems.find(i => i.shortcut === e.key.toUpperCase());
+        const item = navItems.find((i) => i.shortcut === e.key.toUpperCase());
         if (item) {
           e.preventDefault();
           navigate(item.path);
@@ -93,14 +111,14 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [commandOpen, navigate]);
 
   // Clear search when opening
   useEffect(() => {
     if (commandOpen) {
-      setSearchQuery('');
+      setSearchQuery("");
     }
   }, [commandOpen]);
 
@@ -110,30 +128,29 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
       <motion.div
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+        transition={{ type: "spring", stiffness: 100, damping: 20 }}
         className="fixed top-4 left-4 right-4 z-40"
       >
         <div className="max-w-[1800px] mx-auto">
           <div className="glass-card rounded-[24px] border border-border/30 shadow-[0_20px_70px_rgba(0,0,0,0.3)] backdrop-blur-2xl overflow-hidden">
             {/* Animated Background */}
-            <motion.div 
+            <motion.div
               animate={{
-                backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
               }}
               transition={{
                 duration: 5,
                 repeat: Infinity,
-                ease: "linear"
+                ease: "linear",
               }}
               className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 pointer-events-none"
-              style={{ backgroundSize: '200% 200%' }}
+              style={{ backgroundSize: "200% 200%" }}
             />
 
             <div className="relative px-6 py-3">
               <div className="flex items-center gap-4">
-                
                 {/* LEFT: User Details Card - Unique Style */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
@@ -156,7 +173,7 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                           transition={{
                             duration: 2,
                             repeat: Infinity,
-                            ease: "easeInOut"
+                            ease: "easeInOut",
                           }}
                           className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background"
                         />
@@ -177,7 +194,7 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                           transition={{
                             duration: 3,
                             repeat: Infinity,
-                            ease: "linear"
+                            ease: "linear",
                           }}
                         >
                           <Zap className="w-3 h-3 text-yellow-500" />
@@ -232,9 +249,11 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                   </span>
                   <div className="hidden sm:flex items-center gap-1 ml-auto">
                     <kbd className="px-2 py-1 text-xs bg-background/50 rounded border border-border/30 shadow-sm">
-                      {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}
+                      {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"}
                     </kbd>
-                    <kbd className="px-2 py-1 text-xs bg-background/50 rounded border border-border/30 shadow-sm">K</kbd>
+                    <kbd className="px-2 py-1 text-xs bg-background/50 rounded border border-border/30 shadow-sm">
+                      K
+                    </kbd>
                   </div>
                 </motion.button>
 
@@ -243,7 +262,7 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                   <motion.div
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
+                    transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
                   >
                     <motion.div whileHover={{ scale: 1.1, rotate: 180 }} whileTap={{ scale: 0.9 }}>
                       <Button
@@ -252,7 +271,7 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                         onClick={() => dispatch(toggleTheme())}
                         className="rounded-[14px] h-10 w-10 hover:bg-muted/50"
                       >
-                        {mode === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                        {mode === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
                       </Button>
                     </motion.div>
                   </motion.div>
@@ -260,7 +279,7 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                   <motion.div
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
+                    transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
                   >
                     <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                       <Button
@@ -291,12 +310,12 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
               onClick={() => setCommandOpen(false)}
               className="fixed inset-0 bg-black/60 backdrop-blur-lg z-50 flex items-start justify-center pt-32"
             />
-            
+
             <motion.div
               initial={{ scale: 0.9, y: -20, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.9, y: -20, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="fixed top-32 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-2xl"
             >
               {/* Animated Glow */}
@@ -308,26 +327,27 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                 transition={{
                   duration: 3,
                   repeat: Infinity,
-                  ease: "easeInOut"
+                  ease: "easeInOut",
                 }}
                 className="absolute inset-0 bg-gradient-to-r from-primary/30 via-secondary/30 to-primary/30 rounded-[28px] blur-3xl"
               />
 
-              <div className="relative glass-card rounded-[28px] border border-border/30 shadow-[0_30px_90px_rgba(0,0,0,0.5)] overflow-hidden"
+              <div
+                className="relative glass-card rounded-[28px] border border-border/30 shadow-[0_30px_90px_rgba(0,0,0,0.5)] overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Animated Background */}
                 <motion.div
                   animate={{
-                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                    backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                   }}
                   transition={{
                     duration: 5,
                     repeat: Infinity,
-                    ease: "linear"
+                    ease: "linear",
                   }}
                   className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5"
-                  style={{ backgroundSize: '200% 200%' }}
+                  style={{ backgroundSize: "200% 200%" }}
                 />
 
                 {/* Search Input */}
@@ -360,29 +380,34 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.05 }}
                           >
-                            <Link
-                              to={item.path}
-                              onClick={() => setCommandOpen(false)}
-                            >
+                            <Link to={item.path} onClick={() => setCommandOpen(false)}>
                               <motion.div
                                 whileHover={{ scale: 1.02, x: 5 }}
                                 whileTap={{ scale: 0.98 }}
                                 className={`flex items-center justify-between gap-3 px-4 py-3 rounded-[14px] transition-all group ${
                                   isActive(item.path)
-                                    ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-lg'
-                                    : 'hover:bg-muted/50'
+                                    ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg"
+                                    : "hover:bg-muted/50"
                                 }`}
                               >
                                 <div className="flex items-center gap-3">
-                                  <div className={`p-2 rounded-lg ${isActive(item.path) ? 'bg-white/20' : 'bg-primary/10'}`}>
+                                  <div
+                                    className={`p-2 rounded-lg ${
+                                      isActive(item.path) ? "bg-white/20" : "bg-primary/10"
+                                    }`}
+                                  >
                                     <item.icon className="w-4 h-4" />
                                   </div>
                                   <span className="font-semibold">{item.label}</span>
                                 </div>
-                                <kbd className={`px-2 py-1 text-xs rounded border ${
-                                  isActive(item.path) ? 'bg-white/20 border-white/30' : 'bg-muted border-border/30'
-                                }`}>
-                                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'} {item.shortcut}
+                                <kbd
+                                  className={`px-2 py-1 text-xs rounded border ${
+                                    isActive(item.path)
+                                      ? "bg-white/20 border-white/30"
+                                      : "bg-muted border-border/30"
+                                  }`}
+                                >
+                                  {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"} {item.shortcut}
                                 </kbd>
                               </motion.div>
                             </Link>
@@ -416,19 +441,23 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                               }}
                               className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-[14px] transition-all ${
                                 action.destructive
-                                  ? 'hover:bg-destructive/10 text-destructive'
-                                  : 'hover:bg-muted/50'
+                                  ? "hover:bg-destructive/10 text-destructive"
+                                  : "hover:bg-muted/50"
                               }`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${action.destructive ? 'bg-destructive/10' : 'bg-primary/10'}`}>
+                                <div
+                                  className={`p-2 rounded-lg ${
+                                    action.destructive ? "bg-destructive/10" : "bg-primary/10"
+                                  }`}
+                                >
                                   <action.icon className="w-4 h-4" />
                                 </div>
                                 <span className="font-semibold">{action.label}</span>
                               </div>
                               {action.shortcut && (
                                 <kbd className="px-2 py-1 text-xs bg-muted rounded border border-border/30">
-                                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'} {action.shortcut}
+                                  {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"} {action.shortcut}
                                 </kbd>
                               )}
                             </motion.button>
@@ -443,7 +472,7 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 200 }}
+                        transition={{ type: "spring", stiffness: 200 }}
                       >
                         <Search className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
                         <p className="text-muted-foreground font-medium">No results found</p>
@@ -478,9 +507,7 @@ export const CommandBarLayout = ({ children }: { children: React.ReactNode }) =>
 
       {/* Main Content */}
       <main className="pt-24 pb-8 px-4 md:px-6">
-        <div className="max-w-[1800px] mx-auto">
-          {children}
-        </div>
+        <div className="max-w-[1800px] mx-auto">{children}</div>
       </main>
 
       {/* Floating Action Button (Mobile) */}

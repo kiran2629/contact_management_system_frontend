@@ -40,7 +40,8 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
     { icon: Activity, label: 'Activity', path: '/activity-logs' },
     { icon: Settings, label: 'Settings', path: '/settings' },
     ...(user?.role === 'Admin' ? [
-      { icon: Shield, label: 'Admin', path: '/admin/users' },
+      { icon: Users, label: 'User Management', path: '/admin/users' },
+      { icon: Shield, label: 'Permissions', path: '/admin/permissions' },
     ] : []),
   ];
 

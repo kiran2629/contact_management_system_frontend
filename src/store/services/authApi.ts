@@ -1,6 +1,5 @@
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { fakeBaseQuery } from "@reduxjs/toolkit/query";
-import usersData from "../../mock/users.json";
+import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
+import usersData from "@/mock/users.json";
 
 export interface LoginRequest {
   email: string;
@@ -26,9 +25,9 @@ export interface UserResponse {
     username: string;
     role: "Admin" | "HR" | "User";
     allowed_categories: string[];
-    name: string;
-    email: string;
-    avatar: string;
+    name?: string;
+    email?: string;
+    avatar?: string;
   };
 }
 
@@ -111,4 +110,8 @@ export const authApi = createApi({
   }),
 });
 
-export const { useLoginMutation, useLogoutMutation, useGetMeQuery } = authApi;
+export const {
+  useLoginMutation,
+  useLogoutMutation,
+  useGetMeQuery,
+} = authApi;
