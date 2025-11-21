@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import { useForm, Controller } from "react-hook-form";
@@ -8,6 +8,7 @@ import { RootState } from "@/store/store";
 import { updateUser, deleteUser, addUser } from "@/store/slices/usersSlice";
 import {
   useGetUsersQuery,
+  useGetUserByIdQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
   useDeleteUserMutation,
@@ -56,6 +57,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MultiSelect } from "@/components/form/MultiSelect";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { ButtonLoader } from "@/components/loaders/ButtonLoader";
 import {
   Search,
@@ -72,11 +75,29 @@ import {
   Users,
   Filter,
   X,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  FileText,
+  Briefcase,
+  Star,
+  Settings,
+  Tags,
 } from "lucide-react";
 import { toast } from "sonner";
 
 // Available categories for users
-const USER_CATEGORIES = ["Public", "Private", "Confidential", "Internal"];
+const USER_CATEGORIES = [
+  "Public",
+  "HR",
+  "Employee",
+  "Client",
+  "Candidate",
+  "Partner",
+  "Vendor",
+  "Other",
+];
 
 // Zod validation schema
 const addUserSchema = z.object({
@@ -176,7 +197,17 @@ const AdminUsers = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showUserDetailDialog, setShowUserDetailDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+
+  const {
+    data: userDetailData,
+    isLoading: isLoadingUserDetail,
+    error: userDetailError,
+  } = useGetUserByIdQuery(selectedUserId || "", {
+    skip: !selectedUserId, // Skip query if no user ID is selected
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [createUserMutation, { isLoading: isCreating }] =
@@ -185,6 +216,13 @@ const AdminUsers = () => {
     useUpdateUserMutation();
   const [deleteUserMutation, { isLoading: isDeleting }] =
     useDeleteUserMutation();
+
+  // Debug: Log userDetailData when it changes
+  useEffect(() => {
+    if (userDetailData) {
+      console.log("User Detail Data received:", userDetailData);
+    }
+  }, [userDetailData]);
 
   // Ensure users is always an array, even if API returns error or undefined
   const users = Array.isArray(usersData) ? usersData : [];
@@ -263,18 +301,21 @@ const AdminUsers = () => {
 
       const result = await createUserMutation(userData).unwrap();
 
-      // Also update Redux store for immediate UI update
-      if (result) {
-        dispatch(addUser(result as any));
-      }
-
+      // Show success toast
       toast.success("User created successfully!");
+
+      // Close dialog and reset form
       setShowAddDialog(false);
       addForm.reset();
+
+      // The list will automatically refetch due to invalidatesTags: ["Users"]
     } catch (error: any) {
-      toast.error(
-        error?.data?.message || "Failed to create user. Please try again."
-      );
+      const errorMessage =
+        error?.data?.message ||
+        error?.data?.error ||
+        "Failed to create user. Please try again.";
+      toast.error(errorMessage);
+      console.error("Create user error:", error);
     }
   };
 
@@ -371,6 +412,13 @@ const AdminUsers = () => {
   const handleDeleteClick = (user: any) => {
     setSelectedUser(user);
     setShowDeleteDialog(true);
+  };
+
+  const handleUserCardClick = (user: any) => {
+    console.log("Card clicked for user:", user);
+    // Use the user's ID (which is the _id from the API)
+    setSelectedUserId(user.id);
+    setShowUserDetailDialog(true);
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -506,8 +554,11 @@ const AdminUsers = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
             >
-              <Card className="overflow-hidden">
-                <CardContent className="p-6">
+              <Card className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
+                <CardContent
+                  className="p-6"
+                  onClick={() => handleUserCardClick(user)}
+                >
                   <div className="mb-4 flex items-start justify-between">
                     <Avatar className="h-14 w-14">
                       <AvatarFallback className="flex items-center justify-center bg-muted">
@@ -519,7 +570,10 @@ const AdminUsers = () => {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => handleEdit(user)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(user);
+                        }}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -527,7 +581,10 @@ const AdminUsers = () => {
                         variant="destructive"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => handleDeleteClick(user)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(user);
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -777,25 +834,55 @@ const AdminUsers = () => {
                     name="allowed_categories"
                     render={({ field }) => (
                       <FormItem className="md:col-span-2">
-                        <FormLabel>
-                          Allowed Categories{" "}
-                          <span className="text-destructive">*</span>
+                        <FormLabel className="flex items-center gap-2">
+                          <Tags className="h-4 w-4 text-primary" />
+                          Categories <span className="text-destructive">*</span>
                         </FormLabel>
                         <FormControl>
                           <Controller
                             control={addForm.control}
                             name="allowed_categories"
                             render={({ field: { value, onChange } }) => (
-                              <MultiSelect
-                                options={USER_CATEGORIES}
-                                selected={value}
-                                onChange={onChange}
-                                placeholder="Select categories..."
-                              />
+                              <div className="grid grid-cols-3 gap-4 p-4 border rounded-lg bg-card">
+                                {USER_CATEGORIES.map((category) => (
+                                  <div
+                                    key={category}
+                                    className="flex items-center space-x-2"
+                                  >
+                                    <Checkbox
+                                      id={`category-${category}`}
+                                      checked={value?.includes(category)}
+                                      onCheckedChange={(checked) => {
+                                        const currentValue = value || [];
+                                        if (checked) {
+                                          onChange([...currentValue, category]);
+                                        } else {
+                                          onChange(
+                                            currentValue.filter(
+                                              (c) => c !== category
+                                            )
+                                          );
+                                        }
+                                      }}
+                                    />
+                                    <Label
+                                      htmlFor={`category-${category}`}
+                                      className="text-sm font-normal cursor-pointer"
+                                    >
+                                      {category}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </div>
                             )}
                           />
                         </FormControl>
                         <FormMessage />
+                        {field.value && field.value.length === 0 && (
+                          <p className="text-sm text-destructive">
+                            Please select at least one category
+                          </p>
+                        )}
                       </FormItem>
                     )}
                   />
@@ -1113,6 +1200,589 @@ const AdminUsers = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* User Detail Dialog */}
+        <Dialog
+          open={showUserDetailDialog}
+          onOpenChange={setShowUserDetailDialog}
+        >
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>User Details</DialogTitle>
+              <DialogDescription>
+                Complete information about the user
+              </DialogDescription>
+            </DialogHeader>
+
+            {isLoadingUserDetail ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">
+                    Loading user details...
+                  </p>
+                </div>
+              </div>
+            ) : userDetailError ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <p className="text-destructive mb-2 font-semibold">
+                    Failed to load user details
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Please try again later
+                  </p>
+                </div>
+              </div>
+            ) : userDetailData ? (
+              <div className="space-y-6">
+                {/* User Profile Header Card */}
+                <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-primary/10 via-primary/5 to-background border p-6">
+                  <div className="flex items-start gap-6">
+                    <div className="relative">
+                      <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                        <AvatarFallback
+                          className={`flex items-center justify-center text-3xl ${
+                            userDetailData.gender === "Male"
+                              ? "bg-gradient-to-br from-blue-500 to-blue-700 text-white"
+                              : userDetailData.gender === "Female"
+                              ? "bg-gradient-to-br from-pink-500 to-pink-700 text-white"
+                              : "bg-gradient-to-br from-purple-500 to-purple-700 text-white"
+                          }`}
+                        >
+                          {getGenderIcon(userDetailData.gender)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {userDetailData.status === "active" && (
+                        <div className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-green-500 border-4 border-background flex items-center justify-center">
+                          <CheckCircle2 className="h-3 w-3 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <h2 className="text-2xl font-bold">
+                          {userDetailData.name}
+                        </h2>
+                        <p className="text-muted-foreground flex items-center gap-2 mt-1">
+                          <span>@{userDetailData.username}</span>
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Badge
+                          className={`${getRoleBadgeColor(
+                            userDetailData.role
+                          )} text-sm px-3 py-1`}
+                        >
+                          <Shield className="h-3 w-3 mr-1" />
+                          {userDetailData.role}
+                        </Badge>
+                        <Badge
+                          variant={
+                            userDetailData.status === "active"
+                              ? "default"
+                              : "secondary"
+                          }
+                          className="text-sm px-3 py-1"
+                        >
+                          {userDetailData.status === "active" ? (
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                          ) : (
+                            <XCircle className="h-3 w-3 mr-1" />
+                          )}
+                          {userDetailData.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Mail className="h-4 w-4" />
+                        <span>{userDetailData.email}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* User Basic Information */}
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <User className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">
+                        Basic Information
+                      </h3>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Full Name
+                          </p>
+                          <p className="font-medium">{userDetailData.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Username
+                          </p>
+                          <p className="font-medium">
+                            @{userDetailData.username}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Email Address
+                          </p>
+                          <p className="font-medium flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            {userDetailData.email}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Gender
+                          </p>
+                          <p className="font-medium capitalize">
+                            {userDetailData.gender || "Not specified"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Allowed Categories */}
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Briefcase className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">
+                        Allowed Categories
+                      </h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {userDetailData.allowed_categories?.length > 0 ? (
+                        userDetailData.allowed_categories.map(
+                          (category, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="secondary"
+                              className="px-3 py-1 text-sm"
+                            >
+                              {category}
+                            </Badge>
+                          )
+                        )
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          No categories assigned
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Permissions */}
+                {userDetailData.permissions && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Settings className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold">Permissions</h3>
+                      </div>
+                      <div className="space-y-6">
+                        {/* Contact Permissions */}
+                        {userDetailData.permissions.contact && (
+                          <div>
+                            <h4 className="font-medium mb-3 flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              Contact
+                            </h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.contact.create
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.contact.create ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Create
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.contact.read
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.contact.read ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Read
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.contact.update
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.contact.update ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Update
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.contact.delete
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.contact.delete ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Delete
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Notes Permissions */}
+                        {userDetailData.permissions.notes && (
+                          <div>
+                            <h4 className="font-medium mb-3 flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              Notes
+                            </h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.notes.create
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.notes.create ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Create
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.notes.read
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.notes.read ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Read
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.notes.update
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.notes.update ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Update
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.notes.delete
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.notes.delete ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Delete
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Tasks Permissions */}
+                        {userDetailData.permissions.tasks && (
+                          <div>
+                            <h4 className="font-medium mb-3 flex items-center gap-2">
+                              <Briefcase className="h-4 w-4 text-muted-foreground" />
+                              Tasks
+                            </h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.tasks.create
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.tasks.create ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Create
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.tasks.read
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.tasks.read ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Read
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.tasks.update
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.tasks.update ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Update
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.tasks.delete
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.tasks.delete ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Delete
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* CRM Features */}
+                        {userDetailData.permissions.crm_features && (
+                          <div>
+                            <h4 className="font-medium mb-3 flex items-center gap-2">
+                              <Star className="h-4 w-4 text-muted-foreground" />
+                              CRM Features
+                            </h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.crm_features
+                                      .view_birthdays
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.crm_features
+                                    .view_birthdays ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  View Birthdays
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.crm_features
+                                      .view_statistics
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.crm_features
+                                    .view_statistics ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  View Statistics
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.crm_features
+                                      .export_contacts
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.crm_features
+                                    .export_contacts ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Export Contacts
+                                </Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                <Badge
+                                  variant={
+                                    userDetailData.permissions.crm_features
+                                      .import_contacts
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  className="w-full justify-center"
+                                >
+                                  {userDetailData.permissions.crm_features
+                                    .import_contacts ? (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  Import Contacts
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Account Information */}
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Clock className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">
+                        Account Information
+                      </h3>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="flex items-start gap-3 p-4 rounded-lg border bg-card">
+                        <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Created At
+                          </p>
+                          <p className="font-medium">
+                            {userDetailData.created_at &&
+                            userDetailData.created_at.trim() !== ""
+                              ? new Date(
+                                  userDetailData.created_at
+                                ).toLocaleString()
+                              : "N/A"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-4 rounded-lg border bg-card">
+                        <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Last Login
+                          </p>
+                          <p className="font-medium">
+                            {userDetailData.last_login &&
+                            userDetailData.last_login.trim() !== ""
+                              ? new Date(
+                                  userDetailData.last_login
+                                ).toLocaleString()
+                              : "Never"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : null}
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUserDetailDialog(false);
+                  setSelectedUserId(null);
+                }}
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </LayoutRouter>
   );
