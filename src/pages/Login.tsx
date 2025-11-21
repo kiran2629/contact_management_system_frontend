@@ -8,7 +8,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { setCredentials } from '@/store/slices/authSlice';
 import { RootState } from '@/store/store';
-import { useLoginMutation } from '@/store/services/authApi';
 import { logActivity } from '@/utils/activityLogger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ButtonLoader } from '@/components/loaders/ButtonLoader';
 import { Building2, Lock, User, Sparkles, Shield, Zap, Crown, Users, UserCircle, Star, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import mockUsers from '@/mock/users.json';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -29,7 +29,7 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { mode } = useSelector((state: RootState) => state.theme);
-  const [login, { isLoading }] = useLoginMutation();
+  const [isLoading, setIsLoading] = useState(false);
   const [detectedRole, setDetectedRole] = useState<'Admin' | 'HR' | 'User' | null>(null);
 
   const { register, handleSubmit, formState: { errors }, watch } = useForm<LoginForm>({
@@ -56,24 +56,49 @@ const Login = () => {
   }, [username]);
 
   const onSubmit = async (data: LoginForm) => {
+    setIsLoading(true);
+    
     try {
-      const result = await login({
-        username: data.username,
-        password: data.password,
-      }).unwrap();
+      // Direct credential check against mock users
+      const user = mockUsers.find(
+        (u) => u.username.toLowerCase() === data.username.toLowerCase() && u.password === data.password
+      );
+
+      if (!user) {
+        toast.error('Invalid credentials');
+        setIsLoading(false);
+        return;
+      }
+
+      // Generate a simple token (mock JWT)
+      const token = btoa(JSON.stringify({ 
+        id: user.id, 
+        username: user.username,
+        role: user.role,
+        timestamp: Date.now()
+      }));
+
+      // Map user data to match expected format
+      const userData = {
+        id: parseInt(user.id),
+        username: user.username,
+        role: user.role as 'Admin' | 'HR' | 'User',
+        allowed_categories: user.allowed_categories || [],
+      };
 
       // Store credentials
       dispatch(setCredentials({
-        user: result.user,
-        token: result.token,
+        user: userData,
+        token: token,
       }));
 
       logActivity('login', { ip: '192.168.1.1', device: 'Desktop' });
-      toast.success(`Welcome back, ${result.user.username}!`);
+      toast.success(`Welcome back, ${user.username}!`);
       navigate('/dashboard');
     } catch (error: any) {
-      const errorMessage = error?.data?.error || 'Invalid credentials';
-      toast.error(errorMessage);
+      toast.error('Invalid credentials');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -205,9 +230,9 @@ const Login = () => {
             </motion.div>
 
             {/* Feature Icons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
               className="grid grid-cols-3 gap-6 pt-8"
             >
@@ -242,8 +267,8 @@ const Login = () => {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
-            className="w-full max-w-md"
-          >
+        className="w-full max-w-md"
+      >
             <Card className="border-0 bg-white/10 backdrop-blur-xl shadow-2xl dark:bg-slate-900/50">
               <CardContent className="p-8">
                 {/* Header */}
@@ -258,7 +283,7 @@ const Login = () => {
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <Building2 className="h-8 w-8 text-white" />
+              <Building2 className="h-8 w-8 text-white" />
                   </motion.div>
                   <h2 className="text-3xl font-bold text-white">Welcome Back</h2>
                   <p className="mt-2 text-purple-200">
@@ -278,14 +303,14 @@ const Login = () => {
                     <Label htmlFor="username" className="text-white">
                       Username
                     </Label>
-                    <div className="relative">
+                <div className="relative">
                       <User className="absolute left-3 top-3 h-5 w-5 text-purple-300" />
-                      <Input
-                        id="username"
-                        placeholder="Enter your username"
+                  <Input
+                    id="username"
+                    placeholder="Enter your username"
                         className="border-white/20 bg-white/10 pl-10 text-white placeholder:text-purple-200 focus:border-purple-400 focus:ring-purple-400"
-                        {...register('username')}
-                      />
+                    {...register('username')}
+                  />
                       {/* Role Detection Indicator */}
                       {detectedRole && (
                         <motion.div
@@ -320,8 +345,8 @@ const Login = () => {
                           )}
                         </motion.div>
                       )}
-                    </div>
-                    {errors.username && (
+                </div>
+                {errors.username && (
                       <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -342,17 +367,17 @@ const Login = () => {
                     <Label htmlFor="password" className="text-white">
                       Password
                     </Label>
-                    <div className="relative">
+                <div className="relative">
                       <Lock className="absolute left-3 top-3 h-5 w-5 text-purple-300" />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Enter your password"
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
                         className="border-white/20 bg-white/10 pl-10 text-white placeholder:text-purple-200 focus:border-purple-400 focus:ring-purple-400"
-                        {...register('password')}
-                      />
-                    </div>
-                    {errors.password && (
+                    {...register('password')}
+                  />
+                </div>
+                {errors.password && (
                       <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -377,16 +402,16 @@ const Login = () => {
                       disabled={isLoading}
                     >
                       {isLoading ? (
-                        <>
-                          <ButtonLoader size={16} />
-                          <span className="ml-2">Signing in...</span>
-                        </>
-                      ) : (
-                        'Sign In'
-                      )}
-                    </Button>
+                  <>
+                    <ButtonLoader size={16} />
+                    <span className="ml-2">Signing in...</span>
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
                   </motion.div>
-                </form>
+            </form>
 
                 {/* Role Cards with Animations */}
                 <motion.div
@@ -576,18 +601,18 @@ const Login = () => {
                           </motion.div>
                         </div>
                         <p className="text-xs text-pink-200">user1 / User@123</p>
-                      </div>
+              </div>
                       <motion.div
                         animate={{ opacity: [0.5, 1, 0.5] }}
                         transition={{ duration: 1.5, repeat: Infinity, delay: 0.6 }}
                       >
                         <CheckCircle2 className="h-5 w-5 text-pink-400" />
                       </motion.div>
-                    </div>
+            </div>
                   </motion.div>
                 </motion.div>
-              </CardContent>
-            </Card>
+          </CardContent>
+        </Card>
 
             {/* Footer Text */}
             <motion.p
@@ -596,10 +621,10 @@ const Login = () => {
               transition={{ delay: 0.9 }}
               className="mt-4 text-center text-sm text-purple-200"
             >
-              Secure role-based authentication system
+          Secure role-based authentication system
             </motion.p>
           </motion.div>
-        </motion.div>
+      </motion.div>
       </div>
     </div>
   );
