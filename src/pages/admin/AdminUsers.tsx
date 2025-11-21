@@ -15,7 +15,7 @@ import type {
   CreateUserInput,
   UpdateUserInput,
 } from "@/store/services/usersApi";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { LayoutRouter } from "@/components/layout/LayoutRouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -377,7 +377,7 @@ const AdminUsers = () => {
   };
 
   return (
-    <AppLayout>
+    <LayoutRouter>
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -1025,7 +1025,7 @@ const AdminUsers = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </AppLayout>
+    </LayoutRouter>
   );
 };
 

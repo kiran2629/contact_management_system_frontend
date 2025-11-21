@@ -15,7 +15,7 @@ import {
 import type { CreateContactInput } from "@/store/services/contactsApi";
 import { addContact, updateContact } from "@/store/slices/contactsSlice";
 import { useDispatch } from "react-redux";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { LayoutRouter } from "@/components/layout/LayoutRouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,6 +48,9 @@ import {
   MapPin,
   ArrowLeft,
   Tags,
+  Save,
+  Sparkles,
+  Edit3,
 } from "lucide-react";
 
 // Categories list
@@ -202,313 +205,369 @@ const AddContact = () => {
   };
 
   return (
-    <AppLayout>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="space-y-6"
-      >
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/contacts")}
-            className="hover:scale-105 transition-transform"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">
-              {isEditMode ? "Edit Contact" : "Add New Contact"}
-            </h1>
-            <p className="text-muted-foreground">
-              {isEditMode
-                ? "Update contact information in your CRM system"
-                : "Create a new contact in your CRM system"}
-            </p>
+    <LayoutRouter>
+      <div className="space-y-6 max-w-4xl mx-auto">
+        {/* 🎨 Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="flex items-center gap-6"
+        >
+          <motion.div whileHover={{ x: -4 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/contacts")}
+              className="glass-card w-14 h-14 rounded-xl border-2 border-border/30 hover:border-primary transition-all"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+          </motion.div>
+
+          <div className="flex items-center gap-4 flex-1">
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+              className="relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-2xl blur-xl opacity-50" />
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
+                {isEditMode ? <Edit3 className="w-8 h-8 text-white" /> : <Sparkles className="w-8 h-8 text-white" />}
+              </div>
+            </motion.div>
+
+            <div>
+              <h1 className="text-4xl font-black text-gradient-shine">
+                {isEditMode ? "Edit Contact" : "Create New Contact"}
+              </h1>
+              <p className="text-muted-foreground text-lg font-medium mt-1">
+                {isEditMode
+                  ? "Update contact information in your CRM"
+                  : "Add a new contact to your professional network"}
+              </p>
+            </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Form Card */}
-        <Card className="shadow-lg border-2">
-          <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
-            <CardDescription>
-              Fill in all required fields to add a new contact
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
-                {/* Two Column Grid */}
-                <div className="grid gap-6 md:grid-cols-2">
-                  {/* Name */}
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          Name <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="John Doe"
-                            {...field}
-                            className="transition-all focus:scale-[1.02]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+        {/* 📝 Form Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="relative group"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 rounded-3xl blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10" />
+          
+          <Card className="glass-card shadow-2xl border-2 border-border/30 rounded-3xl overflow-hidden">
+            <CardHeader className="border-b-2 border-border/20 pb-6 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5">
+              <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                <User className="h-6 w-6 text-primary" />
+                Contact Information
+              </CardTitle>
+              <CardDescription className="text-base">
+                Fill in all required fields marked with <span className="text-destructive font-bold">*</span>
+              </CardDescription>
+            </CardHeader>
 
-                  {/* Email */}
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
-                          Email <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="john.doe@example.com"
-                            {...field}
-                            className="transition-all focus:scale-[1.02]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            <CardContent className="p-8">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-8"
+                >
+                  {/* Two Column Grid */}
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {/* Name */}
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 font-bold text-base">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <User className="h-4 w-4 text-primary" />
+                            </div>
+                            Name <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="John Doe"
+                              {...field}
+                              className="glass-card border-2 border-border/30 focus:border-primary transition-all py-6 text-base font-medium"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Phone */}
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Phone className="h-4 w-4" />
-                          Phone <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="tel"
-                            placeholder="1234567890"
-                            maxLength={10}
-                            {...field}
-                            onChange={(e) => {
-                              // Only allow digits
-                              const value = e.target.value.replace(/\D/g, "");
-                              field.onChange(value);
-                            }}
-                            className="transition-all focus:scale-[1.02]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    {/* Email */}
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 font-bold text-base">
+                            <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
+                              <Mail className="h-4 w-4 text-secondary" />
+                            </div>
+                            Email <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="email"
+                              placeholder="john.doe@example.com"
+                              {...field}
+                              className="glass-card border-2 border-border/30 focus:border-secondary transition-all py-6 text-base font-medium"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Company */}
-                  <FormField
-                    control={form.control}
-                    name="company"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4" />
-                          Company <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Acme Corporation"
-                            {...field}
-                            className="transition-all focus:scale-[1.02]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    {/* Phone */}
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 font-bold text-base">
+                            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                              <Phone className="h-4 w-4 text-accent" />
+                            </div>
+                            Phone <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="tel"
+                              placeholder="1234567890"
+                              maxLength={10}
+                              {...field}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/\D/g, "");
+                                field.onChange(value);
+                              }}
+                              className="glass-card border-2 border-border/30 focus:border-accent transition-all py-6 text-base font-medium"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Categories */}
-                  <FormField
-                    control={form.control}
-                    name="categories"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>
-                          Categories <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Controller
-                            control={form.control}
-                            name="categories"
-                            render={({ field: { value, onChange } }) => (
-                              <MultiSelect
-                                options={CATEGORIES}
-                                selected={value}
-                                onChange={onChange}
-                                placeholder="Select categories..."
-                              />
-                            )}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    {/* Company */}
+                    <FormField
+                      control={form.control}
+                      name="company"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 font-bold text-base">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Building2 className="h-4 w-4 text-primary" />
+                            </div>
+                            Company <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Acme Corporation"
+                              {...field}
+                              className="glass-card border-2 border-border/30 focus:border-primary transition-all py-6 text-base font-medium"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Birthday */}
-                  <FormField
-                    control={form.control}
-                    name="birthday"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          Birthday <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Controller
-                            control={form.control}
-                            name="birthday"
-                            render={({ field: { value, onChange } }) => (
-                              <DatePicker
-                                date={value}
-                                onDateChange={onChange}
-                                placeholder="Select birthday"
-                                maxDate={new Date()}
-                              />
-                            )}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    {/* Categories */}
+                    <FormField
+                      control={form.control}
+                      name="categories"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel className="flex items-center gap-2 font-bold text-base">
+                            <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
+                              <Tags className="h-4 w-4 text-secondary" />
+                            </div>
+                            Categories <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Controller
+                              control={form.control}
+                              name="categories"
+                              render={({ field: { value, onChange } }) => (
+                                <MultiSelect
+                                  options={CATEGORIES}
+                                  selected={value}
+                                  onChange={onChange}
+                                  placeholder="Select categories..."
+                                />
+                              )}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* LinkedIn URL */}
-                  <FormField
-                    control={form.control}
-                    name="linkedinUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Linkedin className="h-4 w-4" />
-                          LinkedIn URL{" "}
-                          <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="https://www.linkedin.com/in/johndoe"
-                            {...field}
-                            className="transition-all focus:scale-[1.02]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    {/* Birthday */}
+                    <FormField
+                      control={form.control}
+                      name="birthday"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 font-bold text-base">
+                            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                              <Calendar className="h-4 w-4 text-accent" />
+                            </div>
+                            Birthday <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Controller
+                              control={form.control}
+                              name="birthday"
+                              render={({ field: { value, onChange } }) => (
+                                <DatePicker
+                                  date={value}
+                                  onDateChange={onChange}
+                                  placeholder="Select birthday"
+                                  maxDate={new Date()}
+                                />
+                              )}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Address */}
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          Address <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="123 Main Street, City, State, ZIP"
-                            {...field}
-                            className="transition-all focus:scale-[1.01] min-h-[80px]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    {/* LinkedIn URL */}
+                    <FormField
+                      control={form.control}
+                      name="linkedinUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 font-bold text-base">
+                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                              <Linkedin className="h-4 w-4 text-blue-500" />
+                            </div>
+                            LinkedIn URL <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://www.linkedin.com/in/johndoe"
+                              {...field}
+                              className="glass-card border-2 border-border/30 focus:border-blue-500 transition-all py-6 text-base font-medium"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Tags */}
-                  <FormField
-                    control={form.control}
-                    name="tags"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel className="flex items-center gap-2">
-                          <Tags className="h-4 w-4" />
-                          Tags
-                        </FormLabel>
-                        <FormControl>
-                          <Controller
-                            control={form.control}
-                            name="tags"
-                            render={({ field: { value, onChange } }) => (
-                              <TagInput
-                                tags={value || []}
-                                onChange={onChange}
-                                placeholder="Type and press Enter to add tags"
-                              />
-                            )}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                    {/* Address */}
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel className="flex items-center gap-2 font-bold text-base">
+                            <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
+                              <MapPin className="h-4 w-4 text-secondary" />
+                            </div>
+                            Address <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="123 Main Street, City, State, ZIP"
+                              {...field}
+                              className="glass-card border-2 border-border/30 focus:border-secondary transition-all min-h-[100px] text-base font-medium resize-none"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                {/* Action Buttons */}
-                <div className="flex flex-col-reverse gap-4 pt-4 sm:flex-row sm:justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate("/contacts")}
-                    className="w-full sm:w-auto hover:scale-105 transition-transform"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full sm:w-auto hover:scale-105 transition-transform"
-                  >
-                    {isLoading ? (
-                      <>
-                        <ButtonLoader size={16} />
-                        <span className="ml-2">
-                          {isEditMode ? "Updating..." : "Saving..."}
-                        </span>
-                      </>
-                    ) : isEditMode ? (
-                      "Update Contact"
-                    ) : (
-                      "Save Contact"
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </AppLayout>
+                    {/* Tags */}
+                    <FormField
+                      control={form.control}
+                      name="tags"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel className="flex items-center gap-2 font-bold text-base">
+                            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                              <Tags className="h-4 w-4 text-accent" />
+                            </div>
+                            Tags <span className="text-muted-foreground font-normal">(Optional)</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Controller
+                              control={form.control}
+                              name="tags"
+                              render={({ field: { value, onChange } }) => (
+                                <TagInput
+                                  tags={value || []}
+                                  onChange={onChange}
+                                  placeholder="Type and press Enter to add tags"
+                                />
+                              )}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col-reverse gap-4 pt-6 sm:flex-row sm:justify-end border-t-2 border-border/20">
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => navigate("/contacts")}
+                        className="w-full sm:w-auto glass-card border-2 px-8 py-6 text-base font-semibold rounded-xl"
+                      >
+                        Cancel
+                      </Button>
+                    </motion.div>
+
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary text-white px-8 py-6 text-base font-bold rounded-xl shadow-lg hover:shadow-xl border-0 relative overflow-hidden group"
+                      >
+                        {/* Shimmer effect */}
+                        <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 animate-shimmer" />
+                        
+                        {isLoading ? (
+                          <>
+                            <ButtonLoader size={20} />
+                            <span className="ml-2">
+                              {isEditMode ? "Updating..." : "Saving..."}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-5 w-5" />
+                            {isEditMode ? "Update Contact" : "Save Contact"}
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </LayoutRouter>
   );
 };
 
