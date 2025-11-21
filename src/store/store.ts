@@ -7,6 +7,7 @@ import logsReducer from './slices/logsSlice';
 import themeReducer from './slices/themeSlice';
 import { contactsApi } from './services/contactsApi';
 import { usersApi } from './services/usersApi';
+import { authApi } from './services/authApi';
 
 export const store = configureStore({
   reducer: {
@@ -18,9 +19,14 @@ export const store = configureStore({
     theme: themeReducer,
     [contactsApi.reducerPath]: contactsApi.reducer,
     [usersApi.reducerPath]: usersApi.reducer,
+    [authApi.reducerPath]: authApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(contactsApi.middleware, usersApi.middleware),
+    getDefaultMiddleware().concat(
+      contactsApi.middleware,
+      usersApi.middleware,
+      authApi.middleware
+    ),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

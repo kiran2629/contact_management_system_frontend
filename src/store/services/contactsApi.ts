@@ -1,28 +1,55 @@
-import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { baseQuery } from './api';
+
+export interface Contact {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  categories: string[];
+  created_at: string;
+  created_by: number;
+}
 
 export const contactsApi = createApi({
   reducerPath: 'contactsApi',
-  baseQuery: fakeBaseQuery(),
+  baseQuery,
   tagTypes: ['Contacts'],
   endpoints: (builder) => ({
-    // Placeholder for Day 2 API integration
-    getContacts: builder.query({
-      queryFn: () => ({ data: [] }),
+    getContacts: builder.query<Contact[], void>({
+      query: () => '/contacts',
       providesTags: ['Contacts'],
     }),
-    getContactById: builder.query({
-      queryFn: () => ({ data: null }),
+    getContactById: builder.query<Contact, number>({
+      query: (id) => `/contacts/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Contacts', id }],
     }),
-    createContact: builder.mutation({
-      queryFn: () => ({ data: null }),
+    searchContacts: builder.query<Contact[], string>({
+      query: (query) => `/contacts/search?q=${encodeURIComponent(query)}`,
+      providesTags: ['Contacts'],
+    }),
+    createContact: builder.mutation<Contact, Omit<Contact, 'id' | 'created_at' | 'created_by'>>({
+      query: (contact) => ({
+        url: '/contacts',
+        method: 'POST',
+        body: contact,
+      }),
       invalidatesTags: ['Contacts'],
     }),
-    updateContact: builder.mutation({
-      queryFn: () => ({ data: null }),
-      invalidatesTags: ['Contacts'],
+    updateContact: builder.mutation<Contact, { id: number; data: Partial<Contact> }>({
+      query: ({ id, data }) => ({
+        url: `/contacts/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Contacts', id }, 'Contacts'],
     }),
-    deleteContact: builder.mutation({
-      queryFn: () => ({ data: null }),
+    deleteContact: builder.mutation<{ success: boolean }, number>({
+      query: (id) => ({
+        url: `/contacts/${id}`,
+        method: 'DELETE',
+      }),
       invalidatesTags: ['Contacts'],
     }),
   }),
