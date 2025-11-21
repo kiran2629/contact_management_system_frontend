@@ -48,6 +48,7 @@ import {
   MapPin,
   ArrowLeft,
   Tags,
+  FileText,
 } from "lucide-react";
 
 // Categories list
@@ -100,6 +101,7 @@ const addContactSchema = z.object({
     }),
   address: z.string().min(5, "Address must be at least 5 characters"),
   tags: z.array(z.string()).optional().default([]),
+  notes: z.string().optional().default(""),
 });
 
 type AddContactForm = z.infer<typeof addContactSchema>;
@@ -130,6 +132,7 @@ const AddContact = () => {
       linkedinUrl: "",
       address: "",
       tags: [],
+      notes: "",
     },
   });
 
@@ -146,6 +149,7 @@ const AddContact = () => {
         linkedinUrl: existingContact.linkedinUrl,
         address: existingContact.address,
         tags: existingContact.tags || [],
+        notes: existingContact.notes || "",
       });
     }
   }, [existingContact, form]);
@@ -163,18 +167,19 @@ const AddContact = () => {
         linkedinUrl: data.linkedinUrl,
         address: data.address,
         tags: data.tags || [],
+        notes: data.notes || "",
       };
 
       if (isEditMode && id) {
         // Update existing contact
         const result = await updateContactMutation({
-          id,
+          id: Number(id),
           data: formattedData,
         }).unwrap();
 
         // Also update Redux store for immediate UI update
         if (result) {
-          dispatch(updateContact(result));
+          dispatch(updateContact({ ...result, id: String(result.id) } as any));
         }
 
         toast.success("Contact updated successfully!");
@@ -184,7 +189,7 @@ const AddContact = () => {
 
         // Also update Redux store for immediate UI update
         if (result) {
-          dispatch(addContact(result));
+          dispatch(addContact({ ...result, id: String(result.id) } as any));
         }
 
         toast.success("Contact created successfully!");
@@ -466,6 +471,28 @@ const AddContact = () => {
                                 placeholder="Type and press Enter to add tags"
                               />
                             )}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Notes */}
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Notes
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Add any additional notes about this contact..."
+                            {...field}
+                            className="transition-all focus:scale-[1.01] min-h-[120px]"
                           />
                         </FormControl>
                         <FormMessage />

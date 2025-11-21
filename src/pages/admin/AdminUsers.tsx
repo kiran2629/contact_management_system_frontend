@@ -69,6 +69,8 @@ import {
   EyeOff,
   UserCircle,
   Users,
+  Filter,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -169,6 +171,7 @@ const AdminUsers = () => {
   const dispatch = useDispatch();
   const { users } = useSelector((state: RootState) => state.users);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRole, setSelectedRole] = useState<string>("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -210,12 +213,23 @@ const AdminUsers = () => {
     },
   });
 
-  const filteredUsers = users.filter(
-    (user) =>
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      user.username.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesRole = selectedRole === "all" || user.role === selectedRole;
+
+    return matchesSearch && matchesRole;
+  });
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setSelectedRole("all");
+  };
+
+  const hasActiveFilters = searchQuery.length > 0 || selectedRole !== "all";
 
   const onSubmitAdd = async (data: AddUserForm) => {
     try {
@@ -392,14 +406,67 @@ const AdminUsers = () => {
           </Button>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search users..."
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        {/* Search and Filters */}
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search users..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Filter by Role:</span>
+              </div>
+              <div className="flex-1 max-w-xs">
+                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All roles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                    <SelectItem value="HR">HR</SelectItem>
+                    <SelectItem value="User">User</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Clear Filters
+              </Button>
+            )}
+          </div>
+
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Active filters:</span>
+              {selectedRole !== "all" && (
+                <Badge variant="secondary" className="text-xs">
+                  Role: {selectedRole}
+                </Badge>
+              )}
+              {searchQuery && (
+                <Badge variant="secondary" className="text-xs">
+                  Search: "{searchQuery}"
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

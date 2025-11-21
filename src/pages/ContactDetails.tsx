@@ -5,7 +5,10 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { RootState } from "@/store/store";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useGetContactByIdQuery, useDeleteContactMutation } from "@/store/services/contactsApi";
+import {
+  useGetContactByIdQuery,
+  useDeleteContactMutation,
+} from "@/store/services/contactsApi";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,17 +35,24 @@ import {
   ExternalLink,
   Edit,
   Trash,
-} from 'lucide-react';
- 
+  Linkedin,
+  FileText,
+} from "lucide-react";
+
 const ContactDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { canAccess, canView } = usePermissions();
-  const [deleteContactMutation, { isLoading: isDeleting }] = useDeleteContactMutation();
+  const [deleteContactMutation, { isLoading: isDeleting }] =
+    useDeleteContactMutation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  
+
   // Fetch contact from API
-  const { data: contact, isLoading, error } = useGetContactByIdQuery(Number(id || 0), {
+  const {
+    data: contact,
+    isLoading,
+    error,
+  } = useGetContactByIdQuery(Number(id || 0), {
     skip: !id,
   });
 
@@ -55,7 +65,9 @@ const ContactDetails = () => {
       navigate("/contacts");
     } catch (error: any) {
       toast.error(
-        error?.data?.message || error?.data?.error || "Failed to delete contact. Please try again."
+        error?.data?.message ||
+          error?.data?.error ||
+          "Failed to delete contact. Please try again."
       );
     }
   };
@@ -86,8 +98,7 @@ const ContactDetails = () => {
       </AppLayout>
     );
   }
- 
- 
+
   return (
     <AppLayout>
       <div className="space-y-6 p-6 bg-gradient-to-br from-background via-background to-muted/30 min-h-screen">
@@ -100,7 +111,7 @@ const ContactDetails = () => {
         >
           <Button
             variant="ghost"
-            onClick={() => navigate('/contacts')}
+            onClick={() => navigate("/contacts")}
             className="border-2 border-border/50 hover:border-primary transition-all hover:bg-primary/10"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -116,7 +127,7 @@ const ContactDetails = () => {
               >
                 <Edit className="h-4 w-4" />
               </Button>
-              {canAccess('delete_contact') && (
+              {canAccess("delete_contact") && (
                 <>
                   <Button
                     variant="destructive"
@@ -159,7 +170,7 @@ const ContactDetails = () => {
             </div>
           )}
         </motion.div>
- 
+
         {/* Main Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -169,7 +180,7 @@ const ContactDetails = () => {
           <Card className="border-2 border-border/50 shadow-2xl bg-card/80 backdrop-blur-sm overflow-hidden">
             {/* Gradient header background */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 -z-10" />
-           
+
             <CardHeader className="border-b-2 border-border/30 bg-gradient-to-r from-primary/5 to-secondary/5 pb-6">
               <div className="flex items-start gap-6">
                 <motion.div
@@ -186,7 +197,7 @@ const ContactDetails = () => {
                     {contact.name}
                   </CardTitle>
                   <div className="flex flex-wrap gap-2">
-                    {contact.categories.map(category => (
+                    {contact.categories.map((category) => (
                       <Badge
                         key={category}
                         className="bg-gradient-to-r from-primary/20 to-secondary/20 border border-primary/30 text-primary font-semibold px-3 py-1"
@@ -200,7 +211,7 @@ const ContactDetails = () => {
             </CardHeader>
             <CardContent className="space-y-6 p-6">
               <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
- 
+
               {/* Contact Information */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-border/30 hover:border-primary/50 hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-300 group">
@@ -208,8 +219,12 @@ const ContactDetails = () => {
                     <Mail className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Email</p>
-                    <p className="font-semibold text-lg group-hover:text-primary transition-colors">{contact.email}</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                      Email
+                    </p>
+                    <p className="font-semibold text-lg group-hover:text-primary transition-colors">
+                      {contact.email}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-border/30 hover:border-primary/50 hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-300 group">
@@ -217,8 +232,12 @@ const ContactDetails = () => {
                     <Phone className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Phone</p>
-                    <p className="font-semibold text-lg group-hover:text-primary transition-colors">{contact.phone}</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                      Phone
+                    </p>
+                    <p className="font-semibold text-lg group-hover:text-primary transition-colors">
+                      {contact.phone}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-border/30 hover:border-primary/50 hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-300 group">
@@ -226,12 +245,77 @@ const ContactDetails = () => {
                     <Building2 className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Company</p>
-                    <p className="font-semibold text-lg group-hover:text-primary transition-colors">{contact.company}</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                      Company
+                    </p>
+                    <p className="font-semibold text-lg group-hover:text-primary transition-colors">
+                      {contact.company}
+                    </p>
                   </div>
                 </div>
+                {contact.birthday && (
+                  <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-border/30 hover:border-primary/50 hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-300 group">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
+                      <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                        Birthday
+                      </p>
+                      <p className="font-semibold text-lg group-hover:text-primary transition-colors">
+                        {new Date(contact.birthday).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {contact.linkedinUrl && (
+                  <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-border/30 hover:border-primary/50 hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-300 group">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
+                      <Linkedin className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                        LinkedIn Profile
+                      </p>
+                      <a
+                        href={contact.linkedinUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-lg group-hover:text-primary transition-colors flex items-center gap-2 hover:underline"
+                      >
+                        View Profile
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
- 
+
+              {/* Notes Section */}
+              {contact.notes && (
+                <>
+                  <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
+                  <div className="p-4 rounded-xl border-2 border-border/30 bg-muted/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Notes
+                      </p>
+                    </div>
+                    <p className="text-foreground whitespace-pre-wrap">
+                      {contact.notes}
+                    </p>
+                  </div>
+                </>
+              )}
+
               {/* Metadata */}
               <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
               <motion.div
@@ -241,7 +325,10 @@ const ContactDetails = () => {
                 className="p-4 rounded-xl border-2 border-border/30 bg-muted/20 text-sm"
               >
                 <p className="text-muted-foreground mb-2">
-                  <span className="font-semibold text-foreground">Created:</span> {new Date(contact.created_at).toLocaleString()}
+                  <span className="font-semibold text-foreground">
+                    Created:
+                  </span>{" "}
+                  {new Date(contact.created_at).toLocaleString()}
                 </p>
               </motion.div>
             </CardContent>
@@ -251,5 +338,5 @@ const ContactDetails = () => {
     </AppLayout>
   );
 };
- 
+
 export default ContactDetails;

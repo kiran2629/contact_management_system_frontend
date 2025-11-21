@@ -9,10 +9,13 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Save, User, Mail, Phone, Building2, Tag } from 'lucide-react';
+import { DatePicker } from '@/components/form/DatePicker';
+import { ArrowLeft, Save, User, Mail, Phone, Building2, Tag, Calendar, Linkedin, FileText } from 'lucide-react';
 import { useCreateContactMutation } from '@/store/services/contactsApi';
+import { format } from 'date-fns';
 
 const validCategories = ["Public", "HR", "Employee", "Client", "Candidate", "Partner", "Vendor", "Other"];
 
@@ -28,11 +31,14 @@ const NewContact = () => {
     phone: '',
     company: '',
     categories: [] as string[],
+    birthday: undefined as Date | undefined,
+    linkedinUrl: '',
+    notes: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | Date | undefined) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -74,6 +80,37 @@ const NewContact = () => {
       newErrors.categories = 'Please select at least one category';
     }
 
+    if (!formData.birthday) {
+      newErrors.birthday = 'Birthday is required';
+    } else {
+      const today = new Date();
+      const age = today.getFullYear() - formData.birthday.getFullYear();
+      const monthDiff = today.getMonth() - formData.birthday.getMonth();
+      const actualAge = (monthDiff < 0 || (monthDiff === 0 && today.getDate() < formData.birthday.getDate())) 
+        ? age - 1 
+        : age;
+      
+      if (actualAge < 14) {
+        newErrors.birthday = 'User must be at least 14 years old';
+      }
+      
+      if (formData.birthday > today) {
+        newErrors.birthday = 'Birthday must be a past date';
+      }
+    }
+
+    if (!formData.linkedinUrl.trim()) {
+      newErrors.linkedinUrl = 'LinkedIn URL is required';
+    } else if (!formData.linkedinUrl.startsWith('https://www.linkedin.com/')) {
+      newErrors.linkedinUrl = 'LinkedIn URL must start with https://www.linkedin.com/';
+    } else {
+      try {
+        new URL(formData.linkedinUrl);
+      } catch {
+        newErrors.linkedinUrl = 'Please enter a valid URL';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -93,6 +130,11 @@ const NewContact = () => {
         phone: formData.phone.trim(),
         company: formData.company.trim(),
         categories: formData.categories.length > 0 ? formData.categories : ['Other'],
+        birthday: formData.birthday ? format(formData.birthday, 'yyyy-MM-dd') : '',
+        linkedinUrl: formData.linkedinUrl.trim(),
+        address: '', // Address can be added later if needed
+        notes: formData.notes.trim() || undefined,
+        tags: [],
       }).unwrap();
 
       toast.success('Contact created successfully!');
@@ -272,6 +314,60 @@ const NewContact = () => {
                   </div>
                   {errors.categories && (
                     <p className="text-sm text-destructive">{errors.categories}</p>
+                  )}
+                </div>
+
+                {/* Birthday Field */}
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Birthday <span className="text-destructive">*</span>
+                  </Label>
+                  <DatePicker
+                    date={formData.birthday}
+                    onDateChange={(date) => handleInputChange('birthday', date)}
+                    placeholder="Select birthday"
+                    maxDate={new Date()}
+                  />
+                  {errors.birthday && (
+                    <p className="text-sm text-destructive">{errors.birthday}</p>
+                  )}
+                </div>
+
+                {/* LinkedIn URL Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="linkedinUrl" className="text-base font-semibold flex items-center gap-2">
+                    <Linkedin className="h-4 w-4 text-primary" />
+                    LinkedIn Profile <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="linkedinUrl"
+                    type="url"
+                    placeholder="https://www.linkedin.com/in/johndoe"
+                    value={formData.linkedinUrl}
+                    onChange={(e) => handleInputChange('linkedinUrl', e.target.value)}
+                    className={`h-12 text-base border-2 ${errors.linkedinUrl ? 'border-destructive' : 'border-border/50 focus:border-primary'}`}
+                  />
+                  {errors.linkedinUrl && (
+                    <p className="text-sm text-destructive">{errors.linkedinUrl}</p>
+                  )}
+                </div>
+
+                {/* Notes Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-base font-semibold flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    Notes
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Add any additional notes about this contact..."
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                    className={`min-h-[120px] text-base border-2 ${errors.notes ? 'border-destructive' : 'border-border/50 focus:border-primary'}`}
+                  />
+                  {errors.notes && (
+                    <p className="text-sm text-destructive">{errors.notes}</p>
                   )}
                 </div>
 
