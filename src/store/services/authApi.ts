@@ -2,18 +2,15 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "./api";
 
 export interface LoginRequest {
-  username: string;
+  email: string;
   password: string;
 }
 
 export interface LoginResponse {
-  token: string;
-  user: {
-    id: number;
-    username: string;
-    role: "Admin" | "HR" | "User";
-    allowed_categories: string[];
-  };
+  success: boolean;
+  message: string;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface UserResponse {
@@ -32,19 +29,19 @@ export const authApi = createApi({
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (credentials) => ({
-        url: "/auth/login",
+        url: "/v1/api/auth/login",
         method: "POST",
         body: credentials,
       }),
     }),
-    logout: builder.mutation<{ success: boolean }, void>({
+    logout: builder.mutation<{ success: boolean; message?: string }, void>({
       query: () => ({
-        url: "/auth/logout",
+        url: "/v1/api/auth/logout",
         method: "POST",
       }),
     }),
     getMe: builder.query<UserResponse, void>({
-      query: () => "/auth/me",
+      query: () => "/v1/auth/me",
       providesTags: ["Auth"],
     }),
   }),

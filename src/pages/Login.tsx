@@ -28,11 +28,11 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
-import mockUsers from "@/mock/users.json";
+import { useLoginMutation } from "@/store/services/authApi";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -41,7 +41,7 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { mode } = useSelector((state: RootState) => state.theme);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loginMutation, { isLoading }] = useLoginMutation();
   const [detectedRole, setDetectedRole] = useState<
     "Admin" | "HR" | "User" | null
   >(null);
@@ -51,20 +51,22 @@ const Login = () => {
     handleSubmit,
     formState: { errors },
     watch,
+    setValue,
+    trigger,
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
 
-  const username = watch("username");
+  const email = watch("email");
 
-  // Detect role based on username
+  // Detect role based on email
   React.useEffect(() => {
-    if (username) {
-      if (username.toLowerCase().includes("admin")) {
+    if (email) {
+      if (email.toLowerCase().includes("admin")) {
         setDetectedRole("Admin");
-      } else if (username.toLowerCase().includes("hr")) {
+      } else if (email.toLowerCase().includes("hr")) {
         setDetectedRole("HR");
-      } else if (username.toLowerCase().includes("user")) {
+      } else if (email.toLowerCase().includes("user")) {
         setDetectedRole("User");
       } else {
         setDetectedRole(null);
@@ -72,58 +74,95 @@ const Login = () => {
     } else {
       setDetectedRole(null);
     }
-  }, [username]);
+  }, [email]);
+
+  // Helper function to decode JWT token
+  const decodeJWT = (token: string) => {
+    try {
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error("Error decoding JWT:", error);
+      return null;
+    }
+  };
 
   const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true);
-
     try {
-      // Direct credential check against mock users
-      const user = mockUsers.find(
-        (u) =>
-          u.username.toLowerCase() === data.username.toLowerCase() &&
-          u.password === data.password
-      );
+      // Call the real API
+      const result = await loginMutation({
+        email: data.email,
+        password: data.password,
+      }).unwrap();
 
-      if (!user) {
-        toast.error("Invalid credentials");
-        setIsLoading(false);
+      // Decode JWT token to extract user information
+      const decodedToken = decodeJWT(result.accessToken);
+
+      if (!decodedToken) {
+        toast.error("Failed to decode authentication token");
         return;
       }
 
-      // Generate a simple token (mock JWT)
-      const token = btoa(
-        JSON.stringify({
-          id: user.id,
-          username: user.username,
-          role: user.role,
-          timestamp: Date.now(),
-        })
-      );
-
-      // Map user data to match expected format
+      // Map decoded token to expected format
       const userData = {
-        id: parseInt(user.id),
-        username: user.username,
-        role: user.role as "Admin" | "HR" | "User",
-        allowed_categories: user.allowed_categories || [],
+        id: decodedToken._id || decodedToken.id || "",
+        username:
+          decodedToken.userName ||
+          decodedToken.username ||
+          data.email.split("@")[0],
+        role: decodedToken.role as "Admin" | "HR" | "User",
+        allowed_categories: decodedToken.allowed_categories || [],
+        name:
+          decodedToken.userName ||
+          decodedToken.name ||
+          decodedToken.username ||
+          data.email.split("@")[0],
+        email: decodedToken.email || data.email,
+        avatar: "",
       };
 
       // Store credentials
       dispatch(
         setCredentials({
           user: userData,
-          token: token,
+          token: result.accessToken,
         })
       );
 
+      // Store refresh token in localStorage
+      localStorage.setItem("crm_refresh_token", result.refreshToken);
+
       logActivity("login", { ip: "192.168.1.1", device: "Desktop" });
-      toast.success(`Welcome back, ${user.username}!`);
-      navigate("/dashboard");
+      toast.success(`Welcome back, ${userData.name || userData.username}!`);
+
+      // Navigate based on role
+      switch (userData.role) {
+        case "Admin":
+          navigate("/dashboard");
+          break;
+        case "HR":
+          navigate("/dashboard");
+          break;
+        case "User":
+          navigate("/dashboard");
+          break;
+        default:
+          navigate("/dashboard");
+      }
     } catch (error: any) {
-      toast.error("Invalid credentials");
-    } finally {
-      setIsLoading(false);
+      const errorMessage =
+        error?.data?.error ||
+        error?.data?.message ||
+        error?.message ||
+        "Invalid credentials";
+      toast.error(errorMessage);
     }
   };
 
@@ -320,23 +359,24 @@ const Login = () => {
 
                 {/* Login Form */}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                  {/* Username Field */}
+                  {/* Email Field */}
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 }}
                     className="space-y-2"
                   >
-                    <Label htmlFor="username" className="text-white">
-                      Username
+                    <Label htmlFor="email" className="text-white">
+                      Email
                     </Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-5 w-5 text-purple-300" />
                       <Input
-                        id="username"
-                        placeholder="Enter your username"
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email"
                         className="border-white/20 bg-white/10 pl-10 text-white placeholder:text-purple-200 focus:border-purple-400 focus:ring-purple-400"
-                        {...register("username")}
+                        {...register("email")}
                       />
                       {/* Role Detection Indicator */}
                       {detectedRole && (
@@ -381,13 +421,13 @@ const Login = () => {
                         </motion.div>
                       )}
                     </div>
-                    {errors.username && (
+                    {errors.email && (
                       <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="text-sm text-red-400"
                       >
-                        {errors.username.message}
+                        {errors.email.message}
                       </motion.p>
                     )}
                   </motion.div>
@@ -466,16 +506,14 @@ const Login = () => {
                     transition={{ delay: 0.9 }}
                     whileHover={{ scale: 1.02, x: 5 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      const form = document.querySelector("form");
-                      const usernameInput = document.getElementById(
-                        "username"
-                      ) as HTMLInputElement;
-                      const passwordInput = document.getElementById(
-                        "password"
-                      ) as HTMLInputElement;
-                      if (usernameInput) usernameInput.value = "admin";
-                      if (passwordInput) passwordInput.value = "Admin@123";
+                    onClick={async () => {
+                      await setValue("email", "test@example.com", {
+                        shouldValidate: true,
+                      });
+                      await setValue("password", "password123", {
+                        shouldValidate: true,
+                      });
+                      trigger();
                     }}
                     className="group relative cursor-pointer overflow-hidden rounded-xl bg-gradient-to-r from-blue-600/20 to-purple-600/20 p-4 backdrop-blur-sm border border-blue-400/30 hover:border-blue-400/60 transition-all"
                   >
@@ -520,7 +558,7 @@ const Login = () => {
                           </motion.div>
                         </div>
                         <p className="text-xs text-blue-200">
-                          admin / Admin@123
+                          test@example.com
                         </p>
                       </div>
                       <motion.div
@@ -539,15 +577,14 @@ const Login = () => {
                     transition={{ delay: 1.0 }}
                     whileHover={{ scale: 1.02, x: 5 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      const usernameInput = document.getElementById(
-                        "username"
-                      ) as HTMLInputElement;
-                      const passwordInput = document.getElementById(
-                        "password"
-                      ) as HTMLInputElement;
-                      if (usernameInput) usernameInput.value = "hr_manager";
-                      if (passwordInput) passwordInput.value = "Hr@123";
+                    onClick={async () => {
+                      await setValue("email", "hr@example.com", {
+                        shouldValidate: true,
+                      });
+                      await setValue("password", "password123", {
+                        shouldValidate: true,
+                      });
+                      trigger();
                     }}
                     className="group relative cursor-pointer overflow-hidden rounded-xl bg-gradient-to-r from-teal-600/20 to-cyan-600/20 p-4 backdrop-blur-sm border border-teal-400/30 hover:border-teal-400/60 transition-all"
                   >
@@ -587,9 +624,7 @@ const Login = () => {
                             <Sparkles className="h-4 w-4 text-cyan-300" />
                           </motion.div>
                         </div>
-                        <p className="text-xs text-teal-200">
-                          hr_manager / Hr@123
-                        </p>
+                        <p className="text-xs text-teal-200">hr@example.com</p>
                       </div>
                       <motion.div
                         animate={{ opacity: [0.5, 1, 0.5] }}
@@ -611,15 +646,14 @@ const Login = () => {
                     transition={{ delay: 1.1 }}
                     whileHover={{ scale: 1.02, x: 5 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      const usernameInput = document.getElementById(
-                        "username"
-                      ) as HTMLInputElement;
-                      const passwordInput = document.getElementById(
-                        "password"
-                      ) as HTMLInputElement;
-                      if (usernameInput) usernameInput.value = "user1";
-                      if (passwordInput) passwordInput.value = "User@123";
+                    onClick={async () => {
+                      await setValue("email", "user@example.com", {
+                        shouldValidate: true,
+                      });
+                      await setValue("password", "password123", {
+                        shouldValidate: true,
+                      });
+                      trigger();
                     }}
                     className="group relative cursor-pointer overflow-hidden rounded-xl bg-gradient-to-r from-pink-600/20 to-rose-600/20 p-4 backdrop-blur-sm border border-pink-400/30 hover:border-pink-400/60 transition-all"
                   >
@@ -664,7 +698,7 @@ const Login = () => {
                           </motion.div>
                         </div>
                         <p className="text-xs text-pink-200">
-                          user1 / User@123
+                          user@example.com
                         </p>
                       </div>
                       <motion.div
