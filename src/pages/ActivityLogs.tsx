@@ -1,7 +1,7 @@
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { RootState } from '@/store/store';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { LayoutRouter } from '@/components/layout/LayoutRouter';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -49,7 +49,7 @@ const ActivityLogs = () => {
   };
  
   return (
-    <AppLayout>
+    <LayoutRouter>
       <div className="space-y-6 p-6 bg-gradient-to-br from-background via-background to-muted/30 min-h-screen">
         {/* Header */}
         <motion.div
@@ -155,7 +155,7 @@ const ActivityLogs = () => {
           </motion.div>
         )}
       </div>
-    </AppLayout>
+    </LayoutRouter>
   );
 };
  

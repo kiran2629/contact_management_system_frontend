@@ -1,177 +1,218 @@
 import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { RootState } from '@/store/store';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { LayoutRouter } from '@/components/layout/LayoutRouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, ContactRound, Activity, TrendingUp } from 'lucide-react';
- 
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Users, ContactRound, Activity, TrendingUp, Sparkles, Plus, ArrowRight, Clock, Building2, Mail, Phone } from 'lucide-react';
+
 const Dashboard = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { contacts } = useSelector((state: RootState) => state.contacts);
   const { users } = useSelector((state: RootState) => state.users);
   const { logs } = useSelector((state: RootState) => state.logs);
- 
+
   const allowedContacts = contacts.filter(contact =>
     contact.categories.some(cat => user?.allowed_categories.includes(cat))
   );
- 
+
+  // Calculate stats
+  const recentContacts = allowedContacts.filter(c => {
+    const created = new Date(c.created_at);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return created >= weekAgo;
+  });
+
   const stats = [
     {
       title: 'Total Contacts',
       value: allowedContacts.length,
       icon: ContactRound,
       change: '+12%',
+      changeType: 'positive',
       color: 'from-primary to-blue-600',
+      bgColor: 'from-primary/10 to-blue-600/10',
     },
     {
       title: user?.role === 'Admin' ? 'Total Users' : 'My Activities',
-      value: user?.role === 'Admin' ? users.length : logs.filter(l => String(l.user) === String(user?.id)).length,
+      value: user?.role === 'Admin' ? users.length : logs.filter(l => l.user === user?.id).length,
       icon: Users,
       change: '+5%',
+      changeType: 'positive',
       color: 'from-secondary to-teal-600',
+      bgColor: 'from-secondary/10 to-teal-600/10',
     },
     {
       title: 'Recent Activities',
       value: logs.slice(0, 10).length,
       icon: Activity,
       change: '+8%',
+      changeType: 'positive',
       color: 'from-accent to-yellow-600',
+      bgColor: 'from-accent/10 to-yellow-600/10',
     },
     {
-      title: 'Growth Rate',
-      value: '24%',
+      title: 'This Week',
+      value: recentContacts.length,
       icon: TrendingUp,
-      change: '+3%',
-      color: 'from-success to-green-600',
+      change: '+24%',
+      changeType: 'positive',
+      color: 'from-green-500 to-emerald-600',
+      bgColor: 'from-green-500/10 to-emerald-600/10',
     },
   ];
- 
-  const recentContacts = allowedContacts.slice(0, 5);
- 
+
+  const recentContactsList = allowedContacts.slice(0, 5);
+
   return (
-    <AppLayout>
-      <div className="space-y-6 p-6 bg-gradient-to-br from-background via-background to-muted/30 min-h-screen">
-        {/* Welcome Header */}
+    <LayoutRouter>
+      <div className="space-y-6">
+        {/* ✨ Welcome Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="relative"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-secondary/10 rounded-2xl blur-3xl -z-10" />
-          <div className="relative border-2 border-border/50 rounded-2xl p-6 bg-card/50 backdrop-blur-sm shadow-lg">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Welcome back, {user?.username}!
-            </h1>
-            <p className="text-muted-foreground mt-2 text-lg">
-              Here's what's happening with your CRM today
-            </p>
+          <div className="glass-card rounded-xl p-6 border border-border/20">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                  <Sparkles className="w-7 h-7 text-white" />
+                </div>
+
+                <div>
+                  <h1 className="text-3xl font-black text-gradient-shine mb-1">
+                    Welcome back, {user?.name?.split(' ')[0] || user?.username}!
+                  </h1>
+                  <p className="text-muted-foreground text-sm">
+                    Here's what's happening with your CRM today
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm">
+                <Badge className="bg-primary/10 text-primary border border-primary/30">
+                  {user?.role}
+                </Badge>
+                <span className="text-muted-foreground hidden sm:inline">
+                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+            </div>
           </div>
         </motion.div>
- 
-        {/* Stats Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+
+        {/* 📊 Stats Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, index) => (
             <motion.div
               key={stat.title}
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: index * 0.1, duration: 0.5 }}
-              whileHover={{ scale: 1.05, y: -5 }}
-              className="group"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              whileHover={{ y: -2 }}
             >
-              <Card className="overflow-hidden border-2 border-border/50 shadow-xl hover:shadow-2xl transition-all duration-300 bg-card/80 backdrop-blur-sm relative">
-                {/* Gradient overlay on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-               
-                <CardHeader className="pb-3 border-b border-border/30">
-                  <CardTitle className="flex items-center justify-between text-sm font-semibold">
+              <Card className="border border-border/20 hover:border-primary/30 transition-all rounded-xl">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider">
                     <span className="text-muted-foreground">{stat.title}</span>
-                    <motion.div
-                      className={`rounded-xl bg-gradient-to-br ${stat.color} p-3 shadow-lg group-hover:scale-110 transition-transform duration-300`}
-                      whileHover={{ rotate: 360 }}
-                      transition={{ duration: 0.6 }}
-                    >
-                      <stat.icon className="h-5 w-5 text-white" />
-                    </motion.div>
+                    <div className={`rounded-lg bg-gradient-to-br ${stat.color} p-2`}>
+                      <stat.icon className="h-4 w-4 text-white" />
+                    </div>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="text-3xl font-bold mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <CardContent>
+                  <div className="text-3xl font-bold mb-1">
                     {stat.value}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-success bg-success/10 px-2 py-1 rounded-full">
-                      {stat.change}
-                    </span>
-                    <span className="text-xs text-muted-foreground">from last month</span>
-                  </div>
+                  <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-xs border-green-500/20">
+                    {stat.change}
+                  </Badge>
                 </CardContent>
               </Card>
             </motion.div>
           ))}
         </div>
- 
-        {/* Recent Contacts */}
+
+        {/* 📋 Recent Contacts */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
+          transition={{ delay: 0.3 }}
         >
-          <Card className="border-2 border-border/50 shadow-xl bg-card/80 backdrop-blur-sm overflow-hidden">
-            <CardHeader className="border-b border-border/30 bg-gradient-to-r from-primary/5 to-secondary/5">
-              <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                <ContactRound className="h-6 w-6 text-primary" />
-                Recent Contacts
-              </CardTitle>
+          <Card className="border border-border/20 rounded-xl overflow-hidden">
+            <CardHeader className="border-b border-border/10 pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <ContactRound className="h-5 w-5" />
+                  Recent Contacts
+                </CardTitle>
+                <Link to="/contacts">
+                  <Button size="sm" className="rounded-lg bg-gradient-to-r from-primary to-secondary text-white">
+                    View All
+                    <ArrowRight className="ml-1 h-3 w-3" />
+                  </Button>
+                </Link>
+              </div>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-3">
-                {recentContacts.map((contact, index) => (
-                  <motion.div
+            <CardContent className="p-4">
+              <div className="space-y-2">
+                {recentContactsList.map((contact, idx) => (
+                  <Link
                     key={contact.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1 }}
-                    whileHover={{ scale: 1.02, x: 5 }}
-                    className="flex items-center gap-4 rounded-xl border-2 border-border/30 p-4 transition-all duration-300 hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 hover:border-primary/50 hover:shadow-lg group cursor-pointer"
+                    to={`/contacts/${contact.id}`}
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border/20 hover:border-primary/30 hover:bg-muted/30 transition-all"
                   >
-                    <motion.div
-                      className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 border-2 border-primary/30 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300"
-                      whileHover={{ rotate: 360 }}
-                      transition={{ duration: 0.6 }}
-                    >
-                      <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30 flex items-center justify-center shrink-0">
+                      <span className="text-lg font-bold text-gradient-primary">
                         {contact.name.charAt(0)}
                       </span>
-                    </motion.div>
+                    </div>
+
+                    {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+                      <h3 className="font-semibold text-sm mb-0.5 truncate">
                         {contact.name}
                       </h3>
-                      <p className="text-sm text-muted-foreground truncate">{contact.company}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {contact.categories?.slice(0, 2).map((cat: string) => (
-                          <span key={cat} className="text-xs font-medium bg-primary/10 px-2 py-1 rounded-full">
-                            {cat}
-                          </span>
-                        ))}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Building2 className="h-3 w-3" />
+                        <span className="truncate">{contact.company}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(contact.created_at).toLocaleDateString()}
-                      </p>
                     </div>
-                  </motion.div>
+
+                    {/* Date */}
+                    <div className="text-xs text-muted-foreground text-right">
+                      {new Date(contact.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  </Link>
                 ))}
               </div>
+
+                {recentContactsList.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mx-auto mb-3">
+                      <ContactRound className="h-8 w-8 text-primary" />
+                    </div>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">No contacts yet</p>
+                    <p className="text-xs text-muted-foreground mb-4">Start building your network</p>
+                    <Link to="/contacts/new">
+                      <Button size="sm" className="rounded-lg bg-gradient-to-r from-primary to-secondary">
+                        <Plus className="mr-1 h-3 w-3" />
+                        Add Contact
+                      </Button>
+                    </Link>
+                  </div>
+                )}
             </CardContent>
           </Card>
         </motion.div>
       </div>
-    </AppLayout>
+    </LayoutRouter>
   );
 };
- 
+
 export default Dashboard;

@@ -126,6 +126,9 @@ const Login = () => {
           data.email.split("@")[0],
         email: decodedToken.email || data.email,
         avatar: "",
+        name: user.name || user.username,
+        email: user.email || "",
+        avatar: user.avatar || "",
       };
 
       // Store credentials

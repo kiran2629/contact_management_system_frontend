@@ -5,6 +5,7 @@ import usersReducer from './slices/usersSlice';
 import permissionsReducer from './slices/permissionsSlice';
 import logsReducer from './slices/logsSlice';
 import themeReducer from './slices/themeSlice';
+import layoutReducer from './slices/layoutSlice';
 import { contactsApi } from './services/contactsApi';
 import { usersApi } from './services/usersApi';
 import { authApi } from './services/authApi';
@@ -17,6 +18,7 @@ export const store = configureStore({
     permissions: permissionsReducer,
     logs: logsReducer,
     theme: themeReducer,
+    layout: layoutReducer,
     [contactsApi.reducerPath]: contactsApi.reducer,
     [usersApi.reducerPath]: usersApi.reducer,
     [authApi.reducerPath]: authApi.reducer,

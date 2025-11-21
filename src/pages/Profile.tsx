@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { RootState } from '@/store/store';
 import { toggleTheme } from '@/store/slices/themeSlice';
 import { setUser } from '@/store/slices/authSlice';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { LayoutRouter } from '@/components/layout/LayoutRouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -138,7 +138,7 @@ const Profile = () => {
   }, [user?.id]);
  
   return (
-    <AppLayout>
+    <LayoutRouter>
       <div className="space-y-8 p-8 max-w-6xl mx-auto bg-gradient-to-br from-background via-background to-muted/30 min-h-screen">
         {/* Header */}
         <motion.div
@@ -592,7 +592,7 @@ const Profile = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </AppLayout>
+    </LayoutRouter>
   );
 };
  
