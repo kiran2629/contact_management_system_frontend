@@ -69,42 +69,7 @@ const Dashboard = () => {
 
   return (
     <LayoutRouter>
-      <div className="space-y-6">
-        {/* ✨ Welcome Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="glass-card rounded-xl p-6 border border-border/20">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                  <Sparkles className="w-7 h-7 text-white" />
-                </div>
-
-                <div>
-                  <h1 className="text-3xl font-black text-gradient-shine mb-1">
-                    Welcome back, {user?.name?.split(' ')[0] || user?.username}!
-                  </h1>
-                  <p className="text-muted-foreground text-sm">
-                    Here's what's happening with your CRM today
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm">
-                <Badge className="bg-primary/10 text-primary border border-primary/30">
-                  {user?.role}
-                </Badge>
-                <span className="text-muted-foreground hidden sm:inline">
-                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
+      <div className="space-y-6 w-full">
         {/* 📊 Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, index) => (

@@ -8,12 +8,6 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-<<<<<<< HEAD
-  success: boolean;
-  message: string;
-  accessToken: string;
-  refreshToken: string;
-=======
   token: string;
   user: {
     id: number;
@@ -24,7 +18,6 @@ export interface LoginResponse {
     email: string;
     avatar: string;
   };
->>>>>>> a5401ffb8e75068482635918f9499e7f8fe3cf8b
 }
 
 export interface UserResponse {
@@ -45,29 +38,13 @@ export const authApi = createApi({
   tagTypes: ["Auth"],
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
-<<<<<<< HEAD
-      query: (credentials) => ({
-        url: "/v1/api/auth/login",
-        method: "POST",
-        body: credentials,
-      }),
-    }),
-    logout: builder.mutation<{ success: boolean; message?: string }, void>({
-      query: () => ({
-        url: "/v1/api/auth/logout",
-        method: "POST",
-      }),
-    }),
-    getMe: builder.query<UserResponse, void>({
-      query: () => "/v1/auth/me",
-=======
       queryFn: async (credentials) => {
         // Mock authentication logic
         await new Promise((resolve) => setTimeout(resolve, 800));
 
         const user = usersData.find(
           (u) =>
-            u.username === credentials.username &&
+            u.email === credentials.email &&
             u.password === credentials.password &&
             u.status === "active"
         );
@@ -129,7 +106,6 @@ export const authApi = createApi({
           },
         };
       },
->>>>>>> a5401ffb8e75068482635918f9499e7f8fe3cf8b
       providesTags: ["Auth"],
     }),
   }),
