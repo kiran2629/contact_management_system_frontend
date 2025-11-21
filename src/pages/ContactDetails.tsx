@@ -1,13 +1,26 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { motion } from 'framer-motion';
-import { RootState } from '@/store/store';
-import { usePermissions } from '@/hooks/usePermissions';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
+import { RootState } from "@/store/store";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useGetContactByIdQuery, useDeleteContactMutation } from "@/store/services/contactsApi";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
   Mail,
@@ -24,17 +37,49 @@ import {
 const ContactDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { contacts } = useSelector((state: RootState) => state.contacts);
   const { canAccess, canView } = usePermissions();
- 
-  const contact = contacts.find(c => c.id === id);
- 
-  if (!contact) {
+  const [deleteContactMutation, { isLoading: isDeleting }] = useDeleteContactMutation();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  // Fetch contact from API
+  const { data: contact, isLoading, error } = useGetContactByIdQuery(Number(id || 0), {
+    skip: !id,
+  });
+
+  const handleDelete = async () => {
+    if (!contact || !id) return;
+
+    try {
+      await deleteContactMutation(Number(id)).unwrap();
+      toast.success("Contact deleted successfully");
+      navigate("/contacts");
+    } catch (error: any) {
+      toast.error(
+        error?.data?.message || error?.data?.error || "Failed to delete contact. Please try again."
+      );
+    }
+  };
+
+  const handleEdit = () => {
+    if (!id) return;
+    navigate(`/contacts/${id}/edit`);
+  };
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center py-12">
+          <p className="text-lg text-muted-foreground">Loading contact...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error || !contact) {
     return (
       <AppLayout>
         <div className="flex flex-col items-center justify-center py-12">
           <p className="text-lg text-muted-foreground">Contact not found</p>
-          <Button onClick={() => navigate('/contacts')} className="mt-4">
+          <Button onClick={() => navigate("/contacts")} className="mt-4">
             Back to Contacts
           </Button>
         </div>
@@ -42,14 +87,6 @@ const ContactDetails = () => {
     );
   }
  
-  const infoItems = [
-    { label: 'Email', value: contact.email, icon: Mail, show: canView('email') },
-    { label: 'Phone', value: contact.phone, icon: Phone, show: canView('phone') },
-    { label: 'Company', value: contact.company, icon: Building2, show: true },
-    { label: 'Position', value: contact.position, icon: Briefcase, show: true },
-    { label: 'Address', value: contact.address, icon: MapPin, show: canView('address') },
-    { label: 'Birthday', value: new Date(contact.birthday).toLocaleDateString(), icon: Calendar, show: canView('birthday') },
-  ];
  
   return (
     <AppLayout>
@@ -69,23 +106,55 @@ const ContactDetails = () => {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          {canAccess('edit_contact') && (
+          {canAccess("edit_contact") && (
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="icon"
+                onClick={handleEdit}
                 className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 transition-all"
               >
                 <Edit className="h-4 w-4" />
               </Button>
               {canAccess('delete_contact') && (
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="border-2 border-destructive/30 hover:border-destructive transition-all shadow-lg hover:shadow-xl"
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
+                <>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="border-2 border-destructive/30 hover:border-destructive transition-all shadow-lg hover:shadow-xl"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                  <AlertDialog
+                    open={showDeleteDialog}
+                    onOpenChange={setShowDeleteDialog}
+                  >
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently
+                          delete the contact
+                          <strong> {contact?.name}</strong> and all associated
+                          data.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDelete}
+                          disabled={isDeleting}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {isDeleting ? "Deleting..." : "Delete Contact"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
               )}
             </div>
           )}
@@ -116,7 +185,6 @@ const ContactDetails = () => {
                   <CardTitle className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                     {contact.name}
                   </CardTitle>
-                  <p className="text-lg text-muted-foreground font-medium mb-4">{contact.position}</p>
                   <div className="flex flex-wrap gap-2">
                     {contact.categories.map(category => (
                       <Badge
@@ -135,95 +203,34 @@ const ContactDetails = () => {
  
               {/* Contact Information */}
               <div className="grid gap-4 md:grid-cols-2">
-                {infoItems.filter(item => item.show).map((item, index) => (
-                  <motion.div
-                    key={item.label}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-center gap-4 p-4 rounded-xl border-2 border-border/30 hover:border-primary/50 hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-300 group"
-                  >
-                    <motion.div
-                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300"
-                      whileHover={{ rotate: 360 }}
-                      transition={{ duration: 0.6 }}
-                    >
-                      <item.icon className="h-5 w-5 text-primary" />
-                    </motion.div>
-                    <div className="flex-1">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                        {item.label}
-                      </p>
-                      <p className="font-semibold text-lg group-hover:text-primary transition-colors">
-                        {item.value}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
+                <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-border/30 hover:border-primary/50 hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-300 group">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
+                    <Mail className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Email</p>
+                    <p className="font-semibold text-lg group-hover:text-primary transition-colors">{contact.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-border/30 hover:border-primary/50 hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-300 group">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
+                    <Phone className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Phone</p>
+                    <p className="font-semibold text-lg group-hover:text-primary transition-colors">{contact.phone}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-border/30 hover:border-primary/50 hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-300 group">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
+                    <Building2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Company</p>
+                    <p className="font-semibold text-lg group-hover:text-primary transition-colors">{contact.company}</p>
+                  </div>
+                </div>
               </div>
- 
-              {/* LinkedIn */}
-              {contact.linkedinUrl && canView('linkedin') && (
-                <>
-                  <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
-                  <motion.a
-                    href={contact.linkedinUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 rounded-xl border-2 border-border/30 hover:border-primary/50 bg-gradient-to-r from-primary/5 to-secondary/5 hover:from-primary/10 hover:to-secondary/10 transition-all duration-300 group"
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20 group-hover:bg-primary/30 transition-colors">
-                      <ExternalLink className="h-5 w-5 text-primary" />
-                    </div>
-                    <span className="font-semibold text-primary group-hover:underline">View LinkedIn Profile</span>
-                  </motion.a>
-                </>
-              )}
- 
-              {/* Notes */}
-              {contact.notes && canView('notes') && (
-                <>
-                  <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 rounded-xl border-2 border-border/30 bg-muted/30"
-                  >
-                    <h3 className="mb-3 font-bold text-lg bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                      Notes
-                    </h3>
-                    <p className="text-muted-foreground leading-relaxed">{contact.notes}</p>
-                  </motion.div>
-                </>
-              )}
- 
-              {/* Tags */}
-              {contact.tags && contact.tags.length > 0 && (
-                <>
-                  <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 rounded-xl border-2 border-border/30 bg-muted/30"
-                  >
-                    <h3 className="mb-3 font-bold text-lg bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                      Tags
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {contact.tags.map(tag => (
-                        <Badge
-                          key={tag}
-                          variant="outline"
-                          className="border-2 border-border/50 hover:border-primary/50 bg-background/50 hover:bg-primary/10 transition-all duration-300 px-3 py-1"
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </motion.div>
-                </>
-              )}
  
               {/* Metadata */}
               <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
@@ -235,9 +242,6 @@ const ContactDetails = () => {
               >
                 <p className="text-muted-foreground mb-2">
                   <span className="font-semibold text-foreground">Created:</span> {new Date(contact.created_at).toLocaleString()}
-                </p>
-                <p className="text-muted-foreground">
-                  <span className="font-semibold text-foreground">Last Updated:</span> {new Date(contact.updated_at).toLocaleString()}
                 </p>
               </motion.div>
             </CardContent>

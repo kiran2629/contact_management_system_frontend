@@ -1,18 +1,19 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import usersData from '../../mock/users.json';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import usersData from "../../mock/users.json";
 
 interface User {
   id: string;
   username: string;
   password: string;
   email: string;
-  role: 'Admin' | 'HR' | 'User';
+  role: "Admin" | "HR" | "User";
   allowed_categories: string[];
   name: string;
   avatar: string;
   created_at: string;
   last_login: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
+  gender?: "Male" | "Female" | "Other";
 }
 
 interface UsersState {
@@ -26,7 +27,7 @@ const initialState: UsersState = {
 };
 
 const usersSlice = createSlice({
-  name: 'users',
+  name: "users",
   initialState,
   reducers: {
     setUsers: (state, action: PayloadAction<User[]>) => {
@@ -36,13 +37,13 @@ const usersSlice = createSlice({
       state.users.push(action.payload);
     },
     updateUser: (state, action: PayloadAction<User>) => {
-      const index = state.users.findIndex(u => u.id === action.payload.id);
+      const index = state.users.findIndex((u) => u.id === action.payload.id);
       if (index !== -1) {
         state.users[index] = action.payload;
       }
     },
     deleteUser: (state, action: PayloadAction<string>) => {
-      state.users = state.users.filter(u => u.id !== action.payload);
+      state.users = state.users.filter((u) => u.id !== action.payload);
     },
   },
 });

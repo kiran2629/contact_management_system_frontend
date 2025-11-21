@@ -103,7 +103,7 @@ const Contacts = () => {
             <p className="text-muted-foreground">Loading contacts...</p>
           </motion.div>
         )}
-
+ 
         {/* Error State */}
         {error && !isLoading && (
           <motion.div
@@ -124,7 +124,7 @@ const Contacts = () => {
             </div>
           </motion.div>
         )}
-
+ 
         {/* Contacts Grid */}
         {!isLoading && !error && (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -203,7 +203,6 @@ const Contacts = () => {
                       </Badge>
                     )}
                   </div>
- 
                 </CardContent>
               </Card>
             </motion.div>
@@ -237,5 +236,3 @@ const Contacts = () => {
 };
  
 export default Contacts;
- 
- 
