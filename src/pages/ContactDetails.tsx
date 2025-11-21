@@ -130,7 +130,7 @@ const ContactDetails = () => {
 
   return (
     <LayoutRouter>
-      <div className="space-y-6 max-w-5xl mx-auto">
+      <div className="space-y-6 w-full">
         {/* 🎯 Header Actions */}
         <motion.div
           initial={{ opacity: 0, x: -30 }}

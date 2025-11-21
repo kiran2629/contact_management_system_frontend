@@ -60,26 +60,7 @@ const Settings = () => {
  
   return (
     <LayoutRouter>
-      <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card rounded-xl border border-border/20 p-6"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black text-gradient-shine">Settings</h1>
-              <p className="text-muted-foreground mt-1">
-                Customize your application preferences
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
+      <div className="space-y-6 w-full">
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Appearance */}
           <motion.div

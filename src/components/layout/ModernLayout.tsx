@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { FloatingNav } from './FloatingNav';
+import { PageHeader } from './PageHeader';
 
 interface ModernLayoutProps {
   children: ReactNode;
@@ -15,11 +16,16 @@ export const ModernLayout = ({ children }: ModernLayoutProps) => {
         <div className="absolute bottom-20 right-20 w-96 h-96 bg-secondary/10 rounded-full blur-3xl" />
       </div>
 
+      {/* Fixed Menu Bar (top right) */}
       <FloatingNav />
 
-      {/* Main Content - 95% width usage */}
-      <main className="relative pt-24 pb-28 md:pb-8 px-2 sm:px-4">
-        <div className="w-full max-w-[1920px] mx-auto">
+      {/* Scrollable Main Content */}
+      <main className="relative pt-6 pb-28 md:pb-8 px-2 sm:px-4">
+        <div className="w-full max-w-[1440px] mx-auto">
+          {/* Scrollable User + Page Details */}
+          <PageHeader />
+          
+          {/* Page Content */}
           {children}
         </div>
       </main>

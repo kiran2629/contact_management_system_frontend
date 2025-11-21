@@ -104,7 +104,7 @@ const Contacts = () => {
 
   return (
     <LayoutRouter>
-      <div className="h-[calc(100vh-140px)]">
+      <div className="h-[calc(100vh-140px)] w-full">
         <div className="glass-card rounded-xl border border-border/20 overflow-hidden h-full flex flex-col md:flex-row">
           {/* LEFT: Contacts List */}
           <div

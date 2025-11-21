@@ -1,5 +1,5 @@
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { baseQuery } from "./api";
+import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
+import usersData from "@/mock/users.json";
 
 export interface LoginRequest {
   email: string;
@@ -7,20 +7,16 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  success: boolean;
-  message: string;
-  accessToken: string;
-  refreshToken: string;
-}
-
-export interface RefreshTokenRequest {
-  refreshToken: string;
-}
-
-export interface RefreshTokenResponse {
-  success: boolean;
-  accessToken: string;
-  refreshToken: string;
+  token: string;
+  user: {
+    id: number;
+    username: string;
+    role: "Admin" | "HR" | "User";
+    allowed_categories: string[];
+    name: string;
+    email: string;
+    avatar: string;
+  };
 }
 
 export interface UserResponse {
@@ -37,32 +33,79 @@ export interface UserResponse {
 
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery,
+  baseQuery: fakeBaseQuery(),
   tagTypes: ["Auth"],
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
-      query: (credentials) => ({
-        url: "/v1/api/auth/login",
-        method: "POST",
-        body: credentials,
-      }),
+      queryFn: async (credentials) => {
+        // Mock authentication logic
+        await new Promise((resolve) => setTimeout(resolve, 800));
+
+        const user = usersData.find(
+          (u) =>
+            u.email === credentials.email &&
+            u.password === credentials.password &&
+            u.status === "active"
+        );
+
+        if (user) {
+          return {
+            data: {
+              token: `mock-jwt-token-${user.id}-${Date.now()}`,
+              user: {
+                id: parseInt(user.id),
+                username: user.username,
+                role: user.role as "Admin" | "HR" | "User",
+                allowed_categories: user.allowed_categories,
+                name: user.name,
+                email: user.email,
+                avatar: user.avatar,
+              },
+            },
+          };
+        }
+
+        return {
+          error: {
+            status: "CUSTOM_ERROR" as const,
+            error: "Invalid credentials or inactive account",
+          },
+        };
+      },
     }),
-    logout: builder.mutation<{ success: boolean; message?: string }, void>({
-      query: () => ({
-        url: "/v1/api/auth/logout",
-        method: "POST",
-      }),
+    logout: builder.mutation<{ success: boolean }, void>({
+      queryFn: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return { data: { success: true } };
+      },
     }),
     getMe: builder.query<UserResponse, void>({
-      query: () => "/v1/api/auth/getSignedUser",
+      queryFn: async () => {
+        const storedUser = localStorage.getItem("crm_user");
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          return {
+            data: {
+              user: {
+                id: user.id,
+                username: user.username,
+                role: user.role as "Admin" | "HR" | "User",
+                allowed_categories: user.allowed_categories,
+                name: user.name,
+                email: user.email,
+                avatar: user.avatar,
+              },
+            },
+          };
+        }
+        return {
+          error: {
+            status: "CUSTOM_ERROR" as const,
+            error: "Not authenticated",
+          },
+        };
+      },
       providesTags: ["Auth"],
-    }),
-    refreshToken: builder.mutation<RefreshTokenResponse, RefreshTokenRequest>({
-      query: (data) => ({
-        url: "/v1/api/auth/refresh-token",
-        method: "POST",
-        body: data,
-      }),
     }),
   }),
 });
@@ -71,5 +114,4 @@ export const {
   useLoginMutation,
   useLogoutMutation,
   useGetMeQuery,
-  useRefreshTokenMutation,
 } = authApi;

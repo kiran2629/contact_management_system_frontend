@@ -139,7 +139,7 @@ const Profile = () => {
  
   return (
     <LayoutRouter>
-      <div className="space-y-8 p-8 max-w-6xl mx-auto bg-gradient-to-br from-background via-background to-muted/30 min-h-screen">
+      <div className="space-y-6 w-full">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
