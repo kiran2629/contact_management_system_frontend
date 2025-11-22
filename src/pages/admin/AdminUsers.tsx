@@ -172,6 +172,42 @@ const editUserSchema = z.object({
     .min(1, "Please select at least one category"),
   status: z.enum(["active", "inactive"]).optional().default("active"),
   gender: z.enum(["Male", "Female", "Other"]).optional().default("Other"),
+  permissions: z
+    .object({
+      contact: z
+        .object({
+          create: z.boolean(),
+          read: z.boolean(),
+          update: z.boolean(),
+          delete: z.boolean(),
+        })
+        .optional(),
+      notes: z
+        .object({
+          create: z.boolean(),
+          read: z.boolean(),
+          update: z.boolean(),
+          delete: z.boolean(),
+        })
+        .optional(),
+      tasks: z
+        .object({
+          create: z.boolean(),
+          read: z.boolean(),
+          update: z.boolean(),
+          delete: z.boolean(),
+        })
+        .optional(),
+      crm_features: z
+        .object({
+          view_birthdays: z.boolean(),
+          view_statistics: z.boolean(),
+          export_contacts: z.boolean(),
+          import_contacts: z.boolean(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 type AddUserForm = z.infer<typeof addUserSchema>;
@@ -252,6 +288,32 @@ const AdminUsers = () => {
       allowed_categories: [],
       status: "active",
       gender: "Other",
+      permissions: {
+        contact: {
+          create: false,
+          read: false,
+          update: false,
+          delete: false,
+        },
+        notes: {
+          create: false,
+          read: false,
+          update: false,
+          delete: false,
+        },
+        tasks: {
+          create: false,
+          read: false,
+          update: false,
+          delete: false,
+        },
+        crm_features: {
+          view_birthdays: false,
+          view_statistics: false,
+          export_contacts: false,
+          import_contacts: false,
+        },
+      },
     },
   });
 
@@ -352,6 +414,57 @@ const AdminUsers = () => {
         gender: data.gender || "Other",
       };
 
+      // Include permissions if they exist, ensuring all required fields are set
+      if (data.permissions) {
+        const permissions: UpdateUserInput["permissions"] = {};
+
+        if (data.permissions.contact) {
+          permissions.contact = {
+            create: Boolean(data.permissions.contact.create),
+            read: Boolean(data.permissions.contact.read),
+            update: Boolean(data.permissions.contact.update),
+            delete: Boolean(data.permissions.contact.delete),
+          };
+        }
+
+        if (data.permissions.notes) {
+          permissions.notes = {
+            create: Boolean(data.permissions.notes.create),
+            read: Boolean(data.permissions.notes.read),
+            update: Boolean(data.permissions.notes.update),
+            delete: Boolean(data.permissions.notes.delete),
+          };
+        }
+
+        if (data.permissions.tasks) {
+          permissions.tasks = {
+            create: Boolean(data.permissions.tasks.create),
+            read: Boolean(data.permissions.tasks.read),
+            update: Boolean(data.permissions.tasks.update),
+            delete: Boolean(data.permissions.tasks.delete),
+          };
+        }
+
+        if (data.permissions.crm_features) {
+          permissions.crm_features = {
+            view_birthdays: Boolean(
+              data.permissions.crm_features.view_birthdays
+            ),
+            view_statistics: Boolean(
+              data.permissions.crm_features.view_statistics
+            ),
+            export_contacts: Boolean(
+              data.permissions.crm_features.export_contacts
+            ),
+            import_contacts: Boolean(
+              data.permissions.crm_features.import_contacts
+            ),
+          };
+        }
+
+        updateData.permissions = permissions;
+      }
+
       // Only include password if it was provided
       if (data.password && data.password.trim() !== "") {
         updateData.password = data.password;
@@ -380,6 +493,55 @@ const AdminUsers = () => {
 
   const handleEdit = (user: any) => {
     setSelectedUser(user);
+
+    // Ensure permissions are properly initialized with all required boolean fields
+    const defaultPermissions = {
+      contact: {
+        create: false,
+        read: false,
+        update: false,
+        delete: false,
+      },
+      notes: {
+        create: false,
+        read: false,
+        update: false,
+        delete: false,
+      },
+      tasks: {
+        create: false,
+        read: false,
+        update: false,
+        delete: false,
+      },
+      crm_features: {
+        view_birthdays: false,
+        view_statistics: false,
+        export_contacts: false,
+        import_contacts: false,
+      },
+    };
+
+    const userPermissions = user.permissions || {};
+    const mergedPermissions = {
+      contact: {
+        ...defaultPermissions.contact,
+        ...(userPermissions.contact || {}),
+      },
+      notes: {
+        ...defaultPermissions.notes,
+        ...(userPermissions.notes || {}),
+      },
+      tasks: {
+        ...defaultPermissions.tasks,
+        ...(userPermissions.tasks || {}),
+      },
+      crm_features: {
+        ...defaultPermissions.crm_features,
+        ...(userPermissions.crm_features || {}),
+      },
+    };
+
     editForm.reset({
       name: user.name,
       username: user.username,
@@ -389,6 +551,7 @@ const AdminUsers = () => {
       allowed_categories: user.allowed_categories,
       status: user.status,
       gender: user.gender || "Other",
+      permissions: mergedPermissions,
     });
     setShowEditDialog(true);
   };
@@ -1212,6 +1375,251 @@ const AdminUsers = () => {
                               />
                             )}
                           />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Permissions Section */}
+                <div className="space-y-6 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">Permissions</h3>
+                  </div>
+
+                  {/* Contact Permissions */}
+                  <FormField
+                    control={editForm.control}
+                    name="permissions.contact"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          Contact Permissions
+                        </FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border rounded-lg bg-card">
+                            {["create", "read", "update", "delete"].map(
+                              (permission) => (
+                                <div
+                                  key={permission}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <Checkbox
+                                    id={`contact-${permission}`}
+                                    checked={
+                                      field.value?.[
+                                        permission as
+                                          | "create"
+                                          | "read"
+                                          | "update"
+                                          | "delete"
+                                      ] || false
+                                    }
+                                    onCheckedChange={(checked) => {
+                                      const currentValue = field.value || {
+                                        create: false,
+                                        read: false,
+                                        update: false,
+                                        delete: false,
+                                      };
+                                      field.onChange({
+                                        ...currentValue,
+                                        [permission]: checked,
+                                      });
+                                    }}
+                                  />
+                                  <Label
+                                    htmlFor={`contact-${permission}`}
+                                    className="text-sm font-normal cursor-pointer capitalize"
+                                  >
+                                    {permission}
+                                  </Label>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Notes Permissions */}
+                  <FormField
+                    control={editForm.control}
+                    name="permissions.notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          Notes Permissions
+                        </FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border rounded-lg bg-card">
+                            {["create", "read", "update", "delete"].map(
+                              (permission) => (
+                                <div
+                                  key={permission}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <Checkbox
+                                    id={`notes-${permission}`}
+                                    checked={
+                                      field.value?.[
+                                        permission as
+                                          | "create"
+                                          | "read"
+                                          | "update"
+                                          | "delete"
+                                      ] || false
+                                    }
+                                    onCheckedChange={(checked) => {
+                                      const currentValue = field.value || {
+                                        create: false,
+                                        read: false,
+                                        update: false,
+                                        delete: false,
+                                      };
+                                      field.onChange({
+                                        ...currentValue,
+                                        [permission]: checked,
+                                      });
+                                    }}
+                                  />
+                                  <Label
+                                    htmlFor={`notes-${permission}`}
+                                    className="text-sm font-normal cursor-pointer capitalize"
+                                  >
+                                    {permission}
+                                  </Label>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Tasks Permissions */}
+                  <FormField
+                    control={editForm.control}
+                    name="permissions.tasks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          Tasks Permissions
+                        </FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border rounded-lg bg-card">
+                            {["create", "read", "update", "delete"].map(
+                              (permission) => (
+                                <div
+                                  key={permission}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <Checkbox
+                                    id={`tasks-${permission}`}
+                                    checked={
+                                      field.value?.[
+                                        permission as
+                                          | "create"
+                                          | "read"
+                                          | "update"
+                                          | "delete"
+                                      ] || false
+                                    }
+                                    onCheckedChange={(checked) => {
+                                      const currentValue = field.value || {
+                                        create: false,
+                                        read: false,
+                                        update: false,
+                                        delete: false,
+                                      };
+                                      field.onChange({
+                                        ...currentValue,
+                                        [permission]: checked,
+                                      });
+                                    }}
+                                  />
+                                  <Label
+                                    htmlFor={`tasks-${permission}`}
+                                    className="text-sm font-normal cursor-pointer capitalize"
+                                  >
+                                    {permission}
+                                  </Label>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* CRM Features Permissions */}
+                  <FormField
+                    control={editForm.control}
+                    name="permissions.crm_features"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Star className="h-4 w-4 text-muted-foreground" />
+                          CRM Features
+                        </FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border rounded-lg bg-card">
+                            {[
+                              "view_birthdays",
+                              "view_statistics",
+                              "export_contacts",
+                              "import_contacts",
+                            ].map((feature) => (
+                              <div
+                                key={feature}
+                                className="flex items-center space-x-2"
+                              >
+                                <Checkbox
+                                  id={`crm-${feature}`}
+                                  checked={
+                                    field.value?.[
+                                      feature as
+                                        | "view_birthdays"
+                                        | "view_statistics"
+                                        | "export_contacts"
+                                        | "import_contacts"
+                                    ] || false
+                                  }
+                                  onCheckedChange={(checked) => {
+                                    const currentValue = field.value || {
+                                      view_birthdays: false,
+                                      view_statistics: false,
+                                      export_contacts: false,
+                                      import_contacts: false,
+                                    };
+                                    field.onChange({
+                                      ...currentValue,
+                                      [feature]: checked,
+                                    });
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`crm-${feature}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {feature
+                                    .replace(/_/g, " ")
+                                    .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>

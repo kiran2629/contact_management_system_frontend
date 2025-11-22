@@ -10,6 +10,8 @@ export const usePermissions = () => {
       canAccess: () => false,
       canView: () => false,
       canEdit: () => false,
+      canCreate: () => false,
+      canDelete: () => false,
       hasCategory: () => false,
       hasPermission: () => false,
     };
@@ -21,13 +23,19 @@ export const usePermissions = () => {
       canAccess: () => true,
       canView: () => true,
       canEdit: () => true,
+      canCreate: () => true,
+      canDelete: () => true,
       hasCategory: () => true,
       hasPermission: () => true,
       getAllowedCategories: () => user.allowed_categories || [],
     };
   }
 
-  const userPermissions = permissions[user.role];
+  // Use permissions from user object (fetched from API) if available
+  // Otherwise fallback to permissions slice (for backward compatibility)
+  const userPermissions = user.permissions
+    ? { permissions: user.permissions }
+    : permissions[user.role];
 
   return {
     canAccess: (category: string, permission: string) => {
@@ -41,6 +49,14 @@ export const usePermissions = () => {
     canEdit: (category: string) => {
       if (!userPermissions?.permissions?.[category]) return false;
       return userPermissions.permissions[category].update === true;
+    },
+    canCreate: (category: string) => {
+      if (!userPermissions?.permissions?.[category]) return false;
+      return userPermissions.permissions[category].create === true;
+    },
+    canDelete: (category: string) => {
+      if (!userPermissions?.permissions?.[category]) return false;
+      return userPermissions.permissions[category].delete === true;
     },
     hasPermission: (category: string, permission: string) => {
       if (!userPermissions?.permissions?.[category]) return false;

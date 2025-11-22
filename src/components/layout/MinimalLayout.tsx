@@ -34,10 +34,7 @@ export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
     { icon: Activity, label: "Activity", path: "/activity-logs" },
     { icon: Settings, label: "Settings", path: "/settings" },
     ...(user?.role === "Admin"
-      ? [
-          { icon: Users, label: "User Management", path: "/admin/users" },
-          { icon: Shield, label: "Permissions", path: "/admin/permissions" },
-        ]
+      ? [{ icon: Users, label: "User Management", path: "/admin/users" }]
       : []),
   ];
 

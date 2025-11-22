@@ -9,6 +9,7 @@ import layoutReducer from './slices/layoutSlice';
 import { contactsApi } from './services/contactsApi';
 import { usersApi } from './services/usersApi';
 import { authApi } from './services/authApi';
+import { dashboardApi } from './services/dashboardApi';
 
 export const store = configureStore({
   reducer: {
@@ -22,12 +23,14 @@ export const store = configureStore({
     [contactsApi.reducerPath]: contactsApi.reducer,
     [usersApi.reducerPath]: usersApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
+    [dashboardApi.reducerPath]: dashboardApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       contactsApi.middleware,
       usersApi.middleware,
-      authApi.middleware
+      authApi.middleware,
+      dashboardApi.middleware
     ),
 });
 

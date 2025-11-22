@@ -16,7 +16,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ButtonLoader } from "@/components/loaders/ButtonLoader";
 import { Building2, Lock, User } from "lucide-react";
 import { toast } from "sonner";
-import { useLoginMutation } from "@/store/services/authApi";
+import {
+  useLoginMutation,
+  useGetSignedUserQuery,
+} from "@/store/services/authApi";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -30,6 +33,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { mode } = useSelector((state: RootState) => state.theme);
   const [loginMutation, { isLoading }] = useLoginMutation();
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const {
     register,
@@ -81,7 +85,7 @@ const Login = () => {
       }
 
       // Map decoded token to expected format
-      const userData = {
+      let userData = {
         id: decodedToken._id || decodedToken.id || "",
         username:
           decodedToken.userName ||
@@ -96,15 +100,53 @@ const Login = () => {
           data.email.split("@")[0],
         email: decodedToken.email || data.email,
         avatar: "",
+        permissions: undefined as any,
       };
 
-      // Store credentials
-      dispatch(
-        setCredentials({
-          user: userData,
-          token: result.accessToken,
-        })
-      );
+      // Fetch permissions from getSignedUser API for all roles (Admin, HR, User)
+      try {
+        // First store credentials to have token available
+        dispatch(
+          setCredentials({
+            user: userData,
+            token: result.accessToken,
+          })
+        );
+
+        // Then fetch signed user data with permissions
+        const signedUserResponse = await fetch(
+          `${
+            import.meta.env.VITE_API_URL || "http://localhost:5000"
+          }/v1/api/auth/getSignedUser`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${result.accessToken}`,
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
+
+        if (signedUserResponse.ok) {
+          const signedUserData = await signedUserResponse.json();
+          // API response structure: { success: true, user: { permissions: {...} } }
+          const permissions = signedUserData.user?.permissions;
+          if (permissions) {
+            userData.permissions = permissions;
+            // Update user with permissions
+            dispatch(
+              setCredentials({
+                user: userData,
+                token: result.accessToken,
+              })
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching permissions:", error);
+        // Continue with login even if permissions fetch fails
+      }
 
       // Store refresh token in localStorage
       localStorage.setItem("crm_refresh_token", result.refreshToken);

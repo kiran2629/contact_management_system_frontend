@@ -48,6 +48,32 @@ export interface SignedUserApiResponse {
     createdAt?: string;
     updatedAt?: string;
     lastLoginAt?: string;
+    permissions?: {
+      contact?: {
+        create: boolean;
+        read: boolean;
+        update: boolean;
+        delete: boolean;
+      };
+      notes?: {
+        create: boolean;
+        read: boolean;
+        update: boolean;
+        delete: boolean;
+      };
+      tasks?: {
+        create: boolean;
+        read: boolean;
+        update: boolean;
+        delete: boolean;
+      };
+      crm_features?: {
+        view_birthdays: boolean;
+        view_statistics: boolean;
+        export_contacts: boolean;
+        import_contacts: boolean;
+      };
+    };
   };
 }
 
@@ -63,6 +89,32 @@ export interface SignedUserResponse {
   createdAt?: string;
   updatedAt?: string;
   lastLoginAt?: string;
+  permissions?: {
+    contact?: {
+      create: boolean;
+      read: boolean;
+      update: boolean;
+      delete: boolean;
+    };
+    notes?: {
+      create: boolean;
+      read: boolean;
+      update: boolean;
+      delete: boolean;
+    };
+    tasks?: {
+      create: boolean;
+      read: boolean;
+      update: boolean;
+      delete: boolean;
+    };
+    crm_features?: {
+      view_birthdays: boolean;
+      view_statistics: boolean;
+      export_contacts: boolean;
+      import_contacts: boolean;
+    };
+  };
 }
 
 export const authApi = createApi({

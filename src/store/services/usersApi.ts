@@ -82,6 +82,32 @@ export interface UpdateUserInput {
   allowed_categories?: string[];
   status?: "active" | "inactive";
   gender?: "Male" | "Female" | "Other";
+  permissions?: {
+    contact?: {
+      create: boolean;
+      read: boolean;
+      update: boolean;
+      delete: boolean;
+    };
+    notes?: {
+      create: boolean;
+      read: boolean;
+      update: boolean;
+      delete: boolean;
+    };
+    tasks?: {
+      create: boolean;
+      read: boolean;
+      update: boolean;
+      delete: boolean;
+    };
+    crm_features?: {
+      view_birthdays: boolean;
+      view_statistics: boolean;
+      export_contacts: boolean;
+      import_contacts: boolean;
+    };
+  };
 }
 
 // Legacy types for backward compatibility
@@ -192,6 +218,7 @@ export const usersApi = createApi({
       query: ({ id, data }) => {
         // Build payload with only defined fields (partial update support)
         const payload: any = {};
+        if (data.name !== undefined) payload.name = data.name;
         if (data.role !== undefined) payload.role = data.role;
         if (data.username !== undefined) payload.userName = data.username;
         if (data.email !== undefined) payload.email = data.email;
@@ -202,6 +229,8 @@ export const usersApi = createApi({
         if (data.gender !== undefined) payload.gender = data.gender;
         if (data.status !== undefined)
           payload.status = data.status === "active" ? "Active" : "Inactive";
+        if (data.permissions !== undefined)
+          payload.permissions = data.permissions;
 
         return {
           url: `/v1/api/user/update/${id}`,

@@ -34,10 +34,7 @@ export const FloatingNav = () => {
     { icon: Activity, label: "Activity", path: "/activity-logs" },
     { icon: Settings, label: "Settings", path: "/settings" },
     ...(user?.role === "Admin"
-      ? [
-          { icon: Users, label: "User Management", path: "/admin/users" },
-          { icon: Shield, label: "Permissions", path: "/admin/permissions" },
-        ]
+      ? [{ icon: Users, label: "User Management", path: "/admin/users" }]
       : []),
   ];
 
@@ -131,7 +128,11 @@ export const FloatingNav = () => {
                       <motion.div
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 17,
+                        }}
                         className="relative"
                       >
                         <div
@@ -182,7 +183,11 @@ export const FloatingNav = () => {
                                 initial={{ scale: 0, rotate: -180 }}
                                 animate={{ scale: 1, rotate: 0 }}
                                 exit={{ scale: 0, rotate: 180 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 500,
+                                  damping: 25,
+                                }}
                                 className="ml-1"
                               >
                                 <motion.div
@@ -237,7 +242,10 @@ export const FloatingNav = () => {
                   stiffness: 200,
                 }}
               >
-                <motion.div whileHover={{ scale: 1.1, rotate: 180 }} whileTap={{ scale: 0.9 }}>
+                <motion.div
+                  whileHover={{ scale: 1.1, rotate: 180 }}
+                  whileTap={{ scale: 0.9 }}
+                >
                   <Button
                     variant="ghost"
                     size="icon"
@@ -250,7 +258,11 @@ export const FloatingNav = () => {
                       }}
                       transition={{ duration: 0.5 }}
                     >
-                      {mode === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                      {mode === "light" ? (
+                        <Moon className="h-4 w-4" />
+                      ) : (
+                        <Sun className="h-4 w-4" />
+                      )}
                     </motion.div>
                   </Button>
                 </motion.div>
@@ -265,7 +277,10 @@ export const FloatingNav = () => {
                   stiffness: 200,
                 }}
               >
-                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
                   <Button
                     variant="ghost"
                     size="icon"
@@ -295,7 +310,10 @@ export const FloatingNav = () => {
                 }}
                 className="lg:hidden"
               >
-                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
                   <Button
                     variant="ghost"
                     size="icon"
@@ -304,9 +322,17 @@ export const FloatingNav = () => {
                   >
                     <motion.div
                       animate={{ rotate: isMenuOpen ? 90 : 0 }}
-                      transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 200,
+                        damping: 20,
+                      }}
                     >
-                      {isMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                      {isMenuOpen ? (
+                        <X className="w-4 h-4" />
+                      ) : (
+                        <Menu className="w-4 h-4" />
+                      )}
                     </motion.div>
                   </Button>
                 </motion.div>
@@ -385,7 +411,10 @@ export const FloatingNav = () => {
                           stiffness: 200,
                         }}
                       >
-                        <Link to={item.path} onClick={() => setIsMenuOpen(false)}>
+                        <Link
+                          to={item.path}
+                          onClick={() => setIsMenuOpen(false)}
+                        >
                           <motion.div
                             whileHover={{ scale: 1.02, x: 5 }}
                             whileTap={{ scale: 0.98 }}
@@ -395,7 +424,11 @@ export const FloatingNav = () => {
                                 : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                             }`}
                           >
-                            <div className={`p-2 rounded-xl ${active ? "bg-white/20" : "bg-primary/10"}`}>
+                            <div
+                              className={`p-2 rounded-xl ${
+                                active ? "bg-white/20" : "bg-primary/10"
+                              }`}
+                            >
                               <item.icon className="w-5 h-5" />
                             </div>
                             <span className="flex-1">{item.label}</span>
@@ -508,11 +541,17 @@ export const FloatingNav = () => {
                     <motion.div
                       whileHover={{ scale: 1.1, y: -3 }}
                       whileTap={{ scale: 0.9 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 17,
+                      }}
                     >
                       <div
                         className={`p-3 rounded-[18px] transition-all ${
-                          active ? "bg-gradient-to-br from-primary to-secondary shadow-lg" : "bg-muted/30"
+                          active
+                            ? "bg-gradient-to-br from-primary to-secondary shadow-lg"
+                            : "bg-muted/30"
                         }`}
                       >
                         <motion.div
@@ -529,7 +568,11 @@ export const FloatingNav = () => {
                             ease: "easeInOut",
                           }}
                         >
-                          <item.icon className={`w-6 h-6 ${active ? "text-white" : "text-muted-foreground"}`} />
+                          <item.icon
+                            className={`w-6 h-6 ${
+                              active ? "text-white" : "text-muted-foreground"
+                            }`}
+                          />
                         </motion.div>
 
                         {/* Glow Effect */}
