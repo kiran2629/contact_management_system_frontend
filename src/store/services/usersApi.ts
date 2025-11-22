@@ -1,10 +1,25 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "./api";
 
+// Helper function to parse permissions (can be string or object)
+const parsePermissions = (permissions: any): any => {
+  if (!permissions) return undefined;
+  if (typeof permissions === "string") {
+    try {
+      return JSON.parse(permissions);
+    } catch (e) {
+      console.error("Error parsing permissions:", e);
+      return undefined;
+    }
+  }
+  return permissions;
+};
+
 // API Response types
 interface ApiUserResponse {
   _id: string;
   userName: string;
+  name?: string;
   email: string;
   role: "Admin" | "HR" | "User";
   allowed_categories: string[];
@@ -12,6 +27,83 @@ interface ApiUserResponse {
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
+  profile_photo?: string | null;
+  gender?: "Male" | "Female" | "Other";
+  status?: "Active" | "Inactive";
+  permissions?:
+    | string
+    | {
+        contact?: {
+          create: boolean;
+          read: boolean;
+          update: boolean;
+          delete: boolean;
+        };
+        notes?: {
+          create: boolean;
+          read: boolean;
+          update: boolean;
+          delete: boolean;
+        };
+        tasks?: {
+          create: boolean;
+          read: boolean;
+          update: boolean;
+          delete: boolean;
+        };
+        crm_features?: {
+          view_birthdays: boolean;
+          view_statistics: boolean;
+          export_contacts: boolean;
+          import_contacts: boolean;
+        };
+      };
+}
+
+interface GetUsersResponse {
+  status: boolean;
+  users: ApiUserResponse[];
+}
+
+// Full User type matching the slice
+export interface User {
+  id: string;
+  username: string;
+  password?: string;
+  email: string;
+  role: "Admin" | "HR" | "User";
+  allowed_categories: string[];
+  name: string;
+  avatar: string;
+  profile_photo?: string | null;
+  created_at: string;
+  last_login: string;
+  status: "active" | "inactive";
+  gender?: "Male" | "Female" | "Other";
+  permissions?: ApiUserResponse["permissions"];
+}
+
+export interface CreateUserInput {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  role: "Admin" | "HR" | "User";
+  allowed_categories: string[];
+  status?: "active" | "inactive";
+  gender?: "Male" | "Female" | "Other";
+}
+
+export interface UpdateUserInput {
+  name?: string;
+  username?: string;
+  email?: string;
+  password?: string;
+  role?: "Admin" | "HR" | "User";
+  allowed_categories?: string[];
+  status?: "active" | "inactive";
+  gender?: "Male" | "Female" | "Other";
+  profile_photo?: string;
   permissions?: {
     contact?: {
       create: boolean;
@@ -40,50 +132,6 @@ interface ApiUserResponse {
   };
 }
 
-interface GetUsersResponse {
-  status: boolean;
-  users: ApiUserResponse[];
-}
-
-// Full User type matching the slice
-export interface User {
-  id: string;
-  username: string;
-  password?: string;
-  email: string;
-  role: "Admin" | "HR" | "User";
-  allowed_categories: string[];
-  name: string;
-  avatar: string;
-  created_at: string;
-  last_login: string;
-  status: "active" | "inactive";
-  gender?: "Male" | "Female" | "Other";
-  permissions?: ApiUserResponse["permissions"];
-}
-
-export interface CreateUserInput {
-  name: string;
-  username: string;
-  email: string;
-  password: string;
-  role: "Admin" | "HR" | "User";
-  allowed_categories: string[];
-  status?: "active" | "inactive";
-  gender?: "Male" | "Female" | "Other";
-}
-
-export interface UpdateUserInput {
-  name?: string;
-  username?: string;
-  email?: string;
-  password?: string;
-  role?: "Admin" | "HR" | "User";
-  allowed_categories?: string[];
-  status?: "active" | "inactive";
-  gender?: "Male" | "Female" | "Other";
-}
-
 // Legacy types for backward compatibility
 export interface CreateUserRequest extends CreateUserInput {}
 export interface UpdateUserRequest extends UpdateUserInput {}
@@ -106,12 +154,14 @@ export const usersApi = createApi({
           email: apiUser.email,
           role: apiUser.role,
           allowed_categories: apiUser.allowed_categories || [],
-          name: apiUser.userName, // Use userName as name if name is not available
+          name: apiUser.name || apiUser.userName, // Use name if available, otherwise userName
           avatar: "", // Not provided by API
+          profile_photo: apiUser.profile_photo || null,
           created_at: apiUser.createdAt,
           last_login: apiUser.lastLoginAt || "",
           status: apiUser.isActive ? "active" : "inactive",
-          permissions: apiUser.permissions,
+          gender: apiUser.gender,
+          permissions: parsePermissions(apiUser.permissions),
         }));
       },
       providesTags: ["Users"],
@@ -119,13 +169,22 @@ export const usersApi = createApi({
     getUserById: builder.query<User, string>({
       query: (id) => `/v1/api/user/${id}`,
       transformResponse: (response: any): User => {
-        // Handle both direct ApiUserResponse and wrapped response
-        // The API might return { user: {...} } or directly {...}
+        // Handle multiple response formats:
+        // 1. { status: true, user: {...} }
+        // 2. { status: true, data: { user: {...} } }
+        // 3. { user: {...} }
+        // 4. Direct user object: {...}
         let apiUser: ApiUserResponse;
 
-        if (response.user) {
-          // Response is wrapped: { user: {...} }
+        if (response.data?.user) {
+          // Response is wrapped: { status: true, data: { user: {...} } }
+          apiUser = response.data.user;
+        } else if (response.user) {
+          // Response is wrapped: { user: {...} } or { status: true, user: {...} }
           apiUser = response.user;
+        } else if (response.data?._id) {
+          // Response is wrapped: { status: true, data: {...} }
+          apiUser = response.data;
         } else if (response._id) {
           // Response is direct: {...}
           apiUser = response;
@@ -141,12 +200,14 @@ export const usersApi = createApi({
           email: apiUser.email || "",
           role: apiUser.role || "User",
           allowed_categories: apiUser.allowed_categories || [],
-          name: apiUser.userName || "", // Use userName as name if name is not available
+          name: apiUser.name || apiUser.userName || "", // Use name if available, otherwise userName
           avatar: "", // Not provided by API
+          profile_photo: apiUser.profile_photo || null,
           created_at: apiUser.createdAt || "",
           last_login: apiUser.lastLoginAt || "",
           status: apiUser.isActive ? "active" : "inactive",
-          permissions: apiUser.permissions,
+          gender: apiUser.gender,
+          permissions: parsePermissions(apiUser.permissions),
         };
 
         return transformed;
@@ -178,20 +239,62 @@ export const usersApi = createApi({
           email: apiUser.email || "",
           role: apiUser.role || "User",
           allowed_categories: apiUser.allowed_categories || [],
-          name: apiUser.userName || "",
+          name: apiUser.name || apiUser.userName || "",
           avatar: "",
+          profile_photo: apiUser.profile_photo || null,
           created_at: apiUser.createdAt || "",
           last_login: apiUser.lastLoginAt || "",
           status: apiUser.isActive ? "active" : "inactive",
-          permissions: apiUser.permissions,
+          gender: apiUser.gender,
+          permissions: parsePermissions(apiUser.permissions),
         };
       },
       invalidatesTags: ["Users"],
     }),
-    updateUser: builder.mutation<User, { id: string; data: UpdateUserInput }>({
-      query: ({ id, data }) => {
-        // Build payload with only defined fields (partial update support)
+    updateUser: builder.mutation<
+      User,
+      { id: string; data: UpdateUserInput; profileImageFile?: File | null }
+    >({
+      query: ({ id, data, profileImageFile }) => {
+        // If there's a file to upload, use FormData
+        if (profileImageFile) {
+          const formData = new FormData();
+
+          // Add simple fields
+          if (data.name !== undefined) formData.append("name", data.name);
+          if (data.role !== undefined) formData.append("role", data.role);
+          if (data.username !== undefined)
+            formData.append("userName", data.username);
+          if (data.email !== undefined) formData.append("email", data.email);
+          if (data.password !== undefined && data.password.trim() !== "")
+            formData.append("password", data.password);
+          if (data.allowed_categories !== undefined) {
+            data.allowed_categories.forEach((cat) => {
+              formData.append("allowed_categories[]", cat);
+            });
+          }
+          if (data.gender !== undefined) formData.append("gender", data.gender);
+          if (data.status !== undefined)
+            formData.append(
+              "status",
+              data.status === "active" ? "Active" : "Inactive"
+            );
+          if (data.permissions !== undefined)
+            formData.append("permissions", JSON.stringify(data.permissions));
+
+          // Add the file - backend expects 'profile_photo' field name
+          formData.append("profile_photo", profileImageFile);
+
+          return {
+            url: `/v1/api/user/update/${id}`,
+            method: "PUT",
+            body: formData,
+          };
+        }
+
+        // Otherwise, send as JSON
         const payload: any = {};
+        if (data.name !== undefined) payload.name = data.name;
         if (data.role !== undefined) payload.role = data.role;
         if (data.username !== undefined) payload.userName = data.username;
         if (data.email !== undefined) payload.email = data.email;
@@ -202,6 +305,8 @@ export const usersApi = createApi({
         if (data.gender !== undefined) payload.gender = data.gender;
         if (data.status !== undefined)
           payload.status = data.status === "active" ? "Active" : "Inactive";
+        if (data.permissions !== undefined)
+          payload.permissions = data.permissions;
 
         return {
           url: `/v1/api/user/update/${id}`,
@@ -220,12 +325,14 @@ export const usersApi = createApi({
           email: apiUser.email || "",
           role: apiUser.role || "User",
           allowed_categories: apiUser.allowed_categories || [],
-          name: apiUser.userName || "",
+          name: apiUser.name || apiUser.userName || "",
           avatar: "",
+          profile_photo: apiUser.profile_photo || null,
           created_at: apiUser.createdAt || "",
           last_login: apiUser.lastLoginAt || "",
           status: apiUser.isActive ? "active" : "inactive",
-          permissions: apiUser.permissions,
+          gender: apiUser.gender,
+          permissions: parsePermissions(apiUser.permissions),
         };
       },
       invalidatesTags: (result, error, { id }) => [

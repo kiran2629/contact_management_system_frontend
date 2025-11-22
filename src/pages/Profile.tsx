@@ -56,7 +56,7 @@ const Profile = () => {
   } = useGetSignedUserQuery();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editUsername, setEditUsername] = useState("");
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,6 +81,8 @@ const Profile = () => {
           "",
         email: signedUserData.email || reduxUser?.email || "",
         avatar: signedUserData.avatar || reduxUser?.avatar || "",
+        profile_photo:
+          signedUserData.profile_photo || reduxUser?.profile_photo || null,
       }
     : reduxUser;
 
@@ -106,6 +108,8 @@ const Profile = () => {
           "",
         email: signedUserData.email || reduxUser?.email || "",
         avatar: signedUserData.avatar || reduxUser?.avatar || "",
+        profile_photo:
+          signedUserData.profile_photo || reduxUser?.profile_photo || null,
       };
       dispatch(setUser(transformedUser));
     }
@@ -117,22 +121,26 @@ const Profile = () => {
     if (user?.username) {
       setEditUsername(user.username);
     }
-    if (user?.id) {
-      const savedImage = localStorage.getItem(`profile_image_${user.id}`);
-      if (savedImage) {
-        setProfileImage(savedImage);
-        setPreviewImage(savedImage);
-      }
+    // Set preview image from user profile_photo
+    if (user?.profile_photo) {
+      const profilePhotoUrl = getProfilePhotoUrl(user.profile_photo);
+      setPreviewImage(profilePhotoUrl);
+    } else {
+      setPreviewImage(null);
     }
-  }, [user?.username, user?.id]);
+  }, [user?.username, user?.profile_photo]);
 
-  // Get avatar URL from localStorage or use default
-  const getAvatarUrl = () => {
-    return (
-      profileImage ||
-      (user?.id ? localStorage.getItem(`profile_image_${user.id}`) : null) ||
-      null
-    );
+  // Get profile photo URL helper
+  const getProfilePhotoUrl = (profilePhoto: string | null | undefined) => {
+    if (!profilePhoto) return null;
+    // If it's already a full URL (Cloudinary, etc.), return as is
+    if (profilePhoto.startsWith("http")) return profilePhoto;
+    // If it's a relative path, prepend API URL
+    if (profilePhoto.startsWith("/"))
+      return `${
+        import.meta.env.VITE_API_URL || "http://localhost:5000"
+      }${profilePhoto}`;
+    return profilePhoto;
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,12 +158,13 @@ const Profile = () => {
         return;
       }
 
-      // Create preview
+      // Store the File object for FormData upload
+      setProfileImageFile(file);
+      // Also create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
         setPreviewImage(result);
-        setProfileImage(result);
       };
       reader.readAsDataURL(file);
     }
@@ -163,65 +172,110 @@ const Profile = () => {
 
   const handleRemoveImage = () => {
     setPreviewImage(null);
-    setProfileImage(null);
+    setProfileImageFile(null);
+    // Reset to original profile photo if available
+    if (user?.profile_photo) {
+      const profilePhotoUrl = getProfilePhotoUrl(user.profile_photo);
+      setPreviewImage(profilePhotoUrl);
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const handleSaveProfile = () => {
-    // Save image to localStorage
-    if (profileImage) {
-      localStorage.setItem(`profile_image_${user?.id}`, profileImage);
-    } else {
-      localStorage.removeItem(`profile_image_${user?.id}`);
-    }
+  const handleSaveProfile = async () => {
+    if (!user) return;
 
-    // Update Redux state with new username
-    if (user) {
-      const updatedUser = {
-        ...user,
-        username: editUsername.trim(),
-      };
+    try {
+      // If there's a new profile image file, upload it
+      if (profileImageFile) {
+        const formData = new FormData();
+        formData.append("profile_photo", profileImageFile);
+        if (editUsername.trim() !== user.username) {
+          formData.append("userName", editUsername.trim());
+        }
 
-      // Update Redux state first
-      dispatch(setUser(updatedUser));
-
-      // Also update localStorage to persist the change
-      localStorage.setItem("crm_user", JSON.stringify(updatedUser));
-
-      // Force header update by triggering a custom event
-      // This ensures the header updates immediately with the new username
-      setTimeout(() => {
-        window.dispatchEvent(
-          new CustomEvent("profileUpdated", {
-            detail: { username: editUsername.trim() },
-          })
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_URL || "http://localhost:5000"
+          }/v1/api/user/update/${user.id}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("crm_token")}`,
+            },
+            body: formData,
+            credentials: "include",
+          }
         );
-      }, 0);
-    }
 
-    toast.success("Profile updated successfully!");
-    setIsEditDialogOpen(false);
+        if (response.ok) {
+          const result = await response.json();
+          const updatedUser = {
+            ...user,
+            username: editUsername.trim(),
+            profile_photo:
+              result.user?.profile_photo ||
+              result.profile_photo ||
+              user.profile_photo,
+          };
+          dispatch(setUser(updatedUser));
+          toast.success("Profile updated successfully!");
+          setIsEditDialogOpen(false);
+          setProfileImageFile(null);
+          // Refetch signed user data to get updated profile photo
+          refetch();
+          return;
+        }
+      }
+
+      // If only username changed, update via API
+      if (editUsername.trim() !== user.username) {
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_URL || "http://localhost:5000"
+          }/v1/api/user/update/${user.id}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("crm_token")}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ userName: editUsername.trim() }),
+            credentials: "include",
+          }
+        );
+
+        if (response.ok) {
+          const updatedUser = {
+            ...user,
+            username: editUsername.trim(),
+          };
+          dispatch(setUser(updatedUser));
+          toast.success("Profile updated successfully!");
+          setIsEditDialogOpen(false);
+          return;
+        }
+      }
+
+      // If nothing changed, just close dialog
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile. Please try again.");
+    }
   };
 
   // Listen for profile updates
   useEffect(() => {
     const handleProfileUpdate = () => {
-      if (user?.id) {
-        const savedImage = localStorage.getItem(`profile_image_${user.id}`);
-        if (savedImage) {
-          setProfileImage(savedImage);
-          setPreviewImage(savedImage);
-        }
-      }
       // Refetch user data after profile update
       refetch();
     };
     window.addEventListener("profileUpdated", handleProfileUpdate);
     return () =>
       window.removeEventListener("profileUpdated", handleProfileUpdate);
-  }, [user?.id, refetch]);
+  }, [refetch]);
 
   // Show loading state
   if (isLoading) {
@@ -359,8 +413,11 @@ const Profile = () => {
                         }}
                       >
                         <AvatarImage
-                          src={getAvatarUrl() || undefined}
+                          src={
+                            getProfilePhotoUrl(user?.profile_photo) || undefined
+                          }
                           alt={user?.username}
+                          className="object-cover"
                         />
                         <AvatarFallback
                           className="text-white text-2xl font-semibold relative z-10"
@@ -740,7 +797,12 @@ const Profile = () => {
                 onClick={() => {
                   setIsEditDialogOpen(false);
                   setEditUsername(user?.username || "");
-                  setPreviewImage(profileImage);
+                  setProfileImageFile(null);
+                  if (user?.profile_photo) {
+                    setPreviewImage(getProfilePhotoUrl(user.profile_photo));
+                  } else {
+                    setPreviewImage(null);
+                  }
                 }}
                 size="sm"
               >

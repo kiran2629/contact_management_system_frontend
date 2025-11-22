@@ -8,6 +8,33 @@ interface User {
   name: string;
   email: string;
   avatar: string;
+  profile_photo?: string | null;
+  permissions?: {
+    contact?: {
+      create: boolean;
+      read: boolean;
+      update: boolean;
+      delete: boolean;
+    };
+    notes?: {
+      create: boolean;
+      read: boolean;
+      update: boolean;
+      delete: boolean;
+    };
+    tasks?: {
+      create: boolean;
+      read: boolean;
+      update: boolean;
+      delete: boolean;
+    };
+    crm_features?: {
+      view_birthdays: boolean;
+      view_statistics: boolean;
+      export_contacts: boolean;
+      import_contacts: boolean;
+    };
+  };
 }
 
 interface AuthState {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import { useForm, Controller } from "react-hook-form";
@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -172,6 +172,42 @@ const editUserSchema = z.object({
     .min(1, "Please select at least one category"),
   status: z.enum(["active", "inactive"]).optional().default("active"),
   gender: z.enum(["Male", "Female", "Other"]).optional().default("Other"),
+  permissions: z
+    .object({
+      contact: z
+        .object({
+          create: z.boolean(),
+          read: z.boolean(),
+          update: z.boolean(),
+          delete: z.boolean(),
+        })
+        .optional(),
+      notes: z
+        .object({
+          create: z.boolean(),
+          read: z.boolean(),
+          update: z.boolean(),
+          delete: z.boolean(),
+        })
+        .optional(),
+      tasks: z
+        .object({
+          create: z.boolean(),
+          read: z.boolean(),
+          update: z.boolean(),
+          delete: z.boolean(),
+        })
+        .optional(),
+      crm_features: z
+        .object({
+          view_birthdays: z.boolean(),
+          view_statistics: z.boolean(),
+          export_contacts: z.boolean(),
+          import_contacts: z.boolean(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 type AddUserForm = z.infer<typeof addUserSchema>;
@@ -210,6 +246,9 @@ const AdminUsers = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [createUserMutation, { isLoading: isCreating }] =
     useCreateUserMutation();
   const [updateUserMutation, { isLoading: isUpdating }] =
@@ -252,6 +291,32 @@ const AdminUsers = () => {
       allowed_categories: [],
       status: "active",
       gender: "Other",
+      permissions: {
+        contact: {
+          create: false,
+          read: false,
+          update: false,
+          delete: false,
+        },
+        notes: {
+          create: false,
+          read: false,
+          update: false,
+          delete: false,
+        },
+        tasks: {
+          create: false,
+          read: false,
+          update: false,
+          delete: false,
+        },
+        crm_features: {
+          view_birthdays: false,
+          view_statistics: false,
+          export_contacts: false,
+          import_contacts: false,
+        },
+      },
     },
   });
 
@@ -352,6 +417,57 @@ const AdminUsers = () => {
         gender: data.gender || "Other",
       };
 
+      // Include permissions if they exist, ensuring all required fields are set
+      if (data.permissions) {
+        const permissions: UpdateUserInput["permissions"] = {};
+
+        if (data.permissions.contact) {
+          permissions.contact = {
+            create: Boolean(data.permissions.contact.create),
+            read: Boolean(data.permissions.contact.read),
+            update: Boolean(data.permissions.contact.update),
+            delete: Boolean(data.permissions.contact.delete),
+          };
+        }
+
+        if (data.permissions.notes) {
+          permissions.notes = {
+            create: Boolean(data.permissions.notes.create),
+            read: Boolean(data.permissions.notes.read),
+            update: Boolean(data.permissions.notes.update),
+            delete: Boolean(data.permissions.notes.delete),
+          };
+        }
+
+        if (data.permissions.tasks) {
+          permissions.tasks = {
+            create: Boolean(data.permissions.tasks.create),
+            read: Boolean(data.permissions.tasks.read),
+            update: Boolean(data.permissions.tasks.update),
+            delete: Boolean(data.permissions.tasks.delete),
+          };
+        }
+
+        if (data.permissions.crm_features) {
+          permissions.crm_features = {
+            view_birthdays: Boolean(
+              data.permissions.crm_features.view_birthdays
+            ),
+            view_statistics: Boolean(
+              data.permissions.crm_features.view_statistics
+            ),
+            export_contacts: Boolean(
+              data.permissions.crm_features.export_contacts
+            ),
+            import_contacts: Boolean(
+              data.permissions.crm_features.import_contacts
+            ),
+          };
+        }
+
+        updateData.permissions = permissions;
+      }
+
       // Only include password if it was provided
       if (data.password && data.password.trim() !== "") {
         updateData.password = data.password;
@@ -360,6 +476,7 @@ const AdminUsers = () => {
       const result = await updateUserMutation({
         id: selectedUser.id,
         data: updateData,
+        profileImageFile: profileImageFile,
       }).unwrap();
 
       // Also update Redux store for immediate UI update
@@ -370,7 +487,12 @@ const AdminUsers = () => {
       toast.success("User updated successfully!");
       setShowEditDialog(false);
       setSelectedUser(null);
+      setProfileImageFile(null);
+      setPreviewImage(null);
       editForm.reset();
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error: any) {
       toast.error(
         error?.data?.message || "Failed to update user. Please try again."
@@ -378,8 +500,107 @@ const AdminUsers = () => {
     }
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image file");
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+
+      // Store the File object for FormData upload
+      setProfileImageFile(file);
+      // Also create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setPreviewImage(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setPreviewImage(null);
+    setProfileImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const getProfilePhotoUrl = (profilePhoto: string | null | undefined) => {
+    if (!profilePhoto) return null;
+    if (profilePhoto.startsWith("http")) return profilePhoto;
+    if (profilePhoto.startsWith("/"))
+      return `${
+        import.meta.env.VITE_API_URL || "http://localhost:5000"
+      }${profilePhoto}`;
+    return profilePhoto;
+  };
+
   const handleEdit = (user: any) => {
     setSelectedUser(user);
+    setProfileImageFile(null);
+
+    // Set preview image from existing profile photo
+    const profilePhotoUrl = getProfilePhotoUrl(user.profile_photo);
+    setPreviewImage(profilePhotoUrl);
+
+    // Ensure permissions are properly initialized with all required boolean fields
+    const defaultPermissions = {
+      contact: {
+        create: false,
+        read: false,
+        update: false,
+        delete: false,
+      },
+      notes: {
+        create: false,
+        read: false,
+        update: false,
+        delete: false,
+      },
+      tasks: {
+        create: false,
+        read: false,
+        update: false,
+        delete: false,
+      },
+      crm_features: {
+        view_birthdays: false,
+        view_statistics: false,
+        export_contacts: false,
+        import_contacts: false,
+      },
+    };
+
+    const userPermissions = user.permissions || {};
+    const mergedPermissions = {
+      contact: {
+        ...defaultPermissions.contact,
+        ...(userPermissions.contact || {}),
+      },
+      notes: {
+        ...defaultPermissions.notes,
+        ...(userPermissions.notes || {}),
+      },
+      tasks: {
+        ...defaultPermissions.tasks,
+        ...(userPermissions.tasks || {}),
+      },
+      crm_features: {
+        ...defaultPermissions.crm_features,
+        ...(userPermissions.crm_features || {}),
+      },
+    };
+
     editForm.reset({
       name: user.name,
       username: user.username,
@@ -389,6 +610,7 @@ const AdminUsers = () => {
       allowed_categories: user.allowed_categories,
       status: user.status,
       gender: user.gender || "Other",
+      permissions: mergedPermissions,
     });
     setShowEditDialog(true);
   };
@@ -610,6 +832,16 @@ const AdminUsers = () => {
                       {/* Avatar */}
                       <div className="relative mb-4">
                         <Avatar className="h-20 w-20 border-4 border-background shadow-lg ring-2 ring-primary/20">
+                          {user.profile_photo && (
+                            <AvatarImage
+                              src={
+                                getProfilePhotoUrl(user.profile_photo) ||
+                                undefined
+                              }
+                              alt={user.name || user.username}
+                              className="object-cover"
+                            />
+                          )}
                           <AvatarFallback
                             className={`${getAvatarGradient(
                               user.role
@@ -1189,6 +1421,61 @@ const AdminUsers = () => {
                     )}
                   />
 
+                  {/* Profile Photo Upload */}
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Profile Photo</FormLabel>
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <Avatar className="h-20 w-20 border-2 border-border">
+                          {previewImage ? (
+                            <AvatarImage
+                              src={previewImage}
+                              alt="Profile preview"
+                              className="object-cover"
+                            />
+                          ) : null}
+                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-lg font-bold">
+                            {selectedUser?.name
+                              ? selectedUser.name.charAt(0).toUpperCase()
+                              : "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            {previewImage ? "Change Photo" : "Upload Photo"}
+                          </Button>
+                          {previewImage && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleRemoveImage}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          JPG, PNG or GIF. Max size 5MB
+                        </p>
+                      </div>
+                    </div>
+                  </FormItem>
+
                   {/* Allowed Categories */}
                   <FormField
                     control={editForm.control}
@@ -1219,6 +1506,251 @@ const AdminUsers = () => {
                   />
                 </div>
 
+                {/* Permissions Section */}
+                <div className="space-y-6 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">Permissions</h3>
+                  </div>
+
+                  {/* Contact Permissions */}
+                  <FormField
+                    control={editForm.control}
+                    name="permissions.contact"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          Contact Permissions
+                        </FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border rounded-lg bg-card">
+                            {["create", "read", "update", "delete"].map(
+                              (permission) => (
+                                <div
+                                  key={permission}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <Checkbox
+                                    id={`contact-${permission}`}
+                                    checked={
+                                      field.value?.[
+                                        permission as
+                                          | "create"
+                                          | "read"
+                                          | "update"
+                                          | "delete"
+                                      ] || false
+                                    }
+                                    onCheckedChange={(checked) => {
+                                      const currentValue = field.value || {
+                                        create: false,
+                                        read: false,
+                                        update: false,
+                                        delete: false,
+                                      };
+                                      field.onChange({
+                                        ...currentValue,
+                                        [permission]: checked,
+                                      });
+                                    }}
+                                  />
+                                  <Label
+                                    htmlFor={`contact-${permission}`}
+                                    className="text-sm font-normal cursor-pointer capitalize"
+                                  >
+                                    {permission}
+                                  </Label>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Notes Permissions */}
+                  <FormField
+                    control={editForm.control}
+                    name="permissions.notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          Notes Permissions
+                        </FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border rounded-lg bg-card">
+                            {["create", "read", "update", "delete"].map(
+                              (permission) => (
+                                <div
+                                  key={permission}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <Checkbox
+                                    id={`notes-${permission}`}
+                                    checked={
+                                      field.value?.[
+                                        permission as
+                                          | "create"
+                                          | "read"
+                                          | "update"
+                                          | "delete"
+                                      ] || false
+                                    }
+                                    onCheckedChange={(checked) => {
+                                      const currentValue = field.value || {
+                                        create: false,
+                                        read: false,
+                                        update: false,
+                                        delete: false,
+                                      };
+                                      field.onChange({
+                                        ...currentValue,
+                                        [permission]: checked,
+                                      });
+                                    }}
+                                  />
+                                  <Label
+                                    htmlFor={`notes-${permission}`}
+                                    className="text-sm font-normal cursor-pointer capitalize"
+                                  >
+                                    {permission}
+                                  </Label>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Tasks Permissions */}
+                  <FormField
+                    control={editForm.control}
+                    name="permissions.tasks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          Tasks Permissions
+                        </FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border rounded-lg bg-card">
+                            {["create", "read", "update", "delete"].map(
+                              (permission) => (
+                                <div
+                                  key={permission}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <Checkbox
+                                    id={`tasks-${permission}`}
+                                    checked={
+                                      field.value?.[
+                                        permission as
+                                          | "create"
+                                          | "read"
+                                          | "update"
+                                          | "delete"
+                                      ] || false
+                                    }
+                                    onCheckedChange={(checked) => {
+                                      const currentValue = field.value || {
+                                        create: false,
+                                        read: false,
+                                        update: false,
+                                        delete: false,
+                                      };
+                                      field.onChange({
+                                        ...currentValue,
+                                        [permission]: checked,
+                                      });
+                                    }}
+                                  />
+                                  <Label
+                                    htmlFor={`tasks-${permission}`}
+                                    className="text-sm font-normal cursor-pointer capitalize"
+                                  >
+                                    {permission}
+                                  </Label>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* CRM Features Permissions */}
+                  <FormField
+                    control={editForm.control}
+                    name="permissions.crm_features"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Star className="h-4 w-4 text-muted-foreground" />
+                          CRM Features
+                        </FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border rounded-lg bg-card">
+                            {[
+                              "view_birthdays",
+                              "view_statistics",
+                              "export_contacts",
+                              "import_contacts",
+                            ].map((feature) => (
+                              <div
+                                key={feature}
+                                className="flex items-center space-x-2"
+                              >
+                                <Checkbox
+                                  id={`crm-${feature}`}
+                                  checked={
+                                    field.value?.[
+                                      feature as
+                                        | "view_birthdays"
+                                        | "view_statistics"
+                                        | "export_contacts"
+                                        | "import_contacts"
+                                    ] || false
+                                  }
+                                  onCheckedChange={(checked) => {
+                                    const currentValue = field.value || {
+                                      view_birthdays: false,
+                                      view_statistics: false,
+                                      export_contacts: false,
+                                      import_contacts: false,
+                                    };
+                                    field.onChange({
+                                      ...currentValue,
+                                      [feature]: checked,
+                                    });
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`crm-${feature}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {feature
+                                    .replace(/_/g, " ")
+                                    .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <DialogFooter>
                   <Button
                     type="button"
@@ -1226,7 +1758,12 @@ const AdminUsers = () => {
                     onClick={() => {
                       setShowEditDialog(false);
                       setSelectedUser(null);
+                      setProfileImageFile(null);
+                      setPreviewImage(null);
                       editForm.reset();
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = "";
+                      }
                     }}
                   >
                     Cancel
@@ -1314,6 +1851,17 @@ const AdminUsers = () => {
                   <div className="flex items-start gap-6">
                     <div className="relative">
                       <Avatar className="h-24 w-24 border-4 border-background shadow-lg ring-2 ring-primary/20">
+                        {userDetailData.profile_photo && (
+                          <AvatarImage
+                            src={
+                              getProfilePhotoUrl(
+                                userDetailData.profile_photo
+                              ) || undefined
+                            }
+                            alt={userDetailData.name || userDetailData.username}
+                            className="object-cover"
+                          />
+                        )}
                         <AvatarFallback
                           className={`${getAvatarGradient(
                             userDetailData.role

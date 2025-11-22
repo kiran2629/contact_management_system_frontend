@@ -1,71 +1,117 @@
-import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { RootState } from '@/store/store';
-import { LayoutRouter } from '@/components/layout/LayoutRouter';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Users, ContactRound, Activity, TrendingUp, Sparkles, Plus, ArrowRight, Clock, Building2, Mail, Phone } from 'lucide-react';
+import { useSelector } from "react-redux";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { RootState } from "@/store/store";
+import { LayoutRouter } from "@/components/layout/LayoutRouter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Users,
+  ContactRound,
+  Activity,
+  TrendingUp,
+  Sparkles,
+  Plus,
+  ArrowRight,
+  Clock,
+  Building2,
+  Mail,
+  Phone,
+  Loader2,
+} from "lucide-react";
+import { useGetDashboardQuery } from "@/store/services/dashboardApi";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const Dashboard = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { contacts } = useSelector((state: RootState) => state.contacts);
   const { users } = useSelector((state: RootState) => state.users);
   const { logs } = useSelector((state: RootState) => state.logs);
+  const { canView, canCreate } = usePermissions();
 
-  const allowedContacts = contacts.filter(contact =>
-    contact.categories.some(cat => user?.allowed_categories.includes(cat))
+  // Fetch dashboard data from API
+  const { data: dashboardData, isLoading, isError } = useGetDashboardQuery();
+
+  // Fallback calculations from Redux state (used if API data is not available)
+  const allowedContacts = contacts.filter((contact) =>
+    contact.categories.some((cat) => user?.allowed_categories.includes(cat))
   );
 
-  // Calculate stats
-  const recentContacts = allowedContacts.filter(c => {
+  const recentContacts = allowedContacts.filter((c) => {
     const created = new Date(c.created_at);
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     return created >= weekAgo;
   });
 
+  // Use API data if available, otherwise fallback to Redux state
+  const totalContacts = dashboardData?.totalContacts ?? allowedContacts.length;
+  const totalUsers =
+    dashboardData?.totalUsers ??
+    (user?.role === "Admin"
+      ? users.length
+      : logs.filter((l) => l.user === user?.id).length);
+  const recentActivities =
+    dashboardData?.recentActivities ?? logs.slice(0, 10).length;
+  const weekActivities = dashboardData?.weekActivities ?? recentContacts.length;
+  const recentContactsList =
+    dashboardData?.recentContacts?.slice(0, 5) ?? allowedContacts.slice(0, 5);
+
   const stats = [
     {
-      title: 'Total Contacts',
-      value: allowedContacts.length,
+      title: "Total Contacts",
+      value: totalContacts,
       icon: ContactRound,
-      change: '+12%',
-      changeType: 'positive',
-      color: 'from-primary to-blue-600',
-      bgColor: 'from-primary/10 to-blue-600/10',
+      change: "+12%",
+      changeType: "positive",
+      color: "from-primary to-blue-600",
+      bgColor: "from-primary/10 to-blue-600/10",
     },
     {
-      title: user?.role === 'Admin' ? 'Total Users' : 'My Activities',
-      value: user?.role === 'Admin' ? users.length : logs.filter(l => l.user === user?.id).length,
+      title: user?.role === "Admin" ? "Total Users" : "My Activities",
+      value: totalUsers,
       icon: Users,
-      change: '+5%',
-      changeType: 'positive',
-      color: 'from-secondary to-teal-600',
-      bgColor: 'from-secondary/10 to-teal-600/10',
+      change: "+5%",
+      changeType: "positive",
+      color: "from-secondary to-teal-600",
+      bgColor: "from-secondary/10 to-teal-600/10",
     },
     {
-      title: 'Recent Activities',
-      value: logs.slice(0, 10).length,
+      title: "Recent Activities",
+      value: recentActivities,
       icon: Activity,
-      change: '+8%',
-      changeType: 'positive',
-      color: 'from-accent to-yellow-600',
-      bgColor: 'from-accent/10 to-yellow-600/10',
+      change: "+8%",
+      changeType: "positive",
+      color: "from-accent to-yellow-600",
+      bgColor: "from-accent/10 to-yellow-600/10",
     },
     {
-      title: 'This Week',
-      value: recentContacts.length,
+      title: "This Week",
+      value: weekActivities,
       icon: TrendingUp,
-      change: '+24%',
-      changeType: 'positive',
-      color: 'from-green-500 to-emerald-600',
-      bgColor: 'from-green-500/10 to-emerald-600/10',
+      change: "+24%",
+      changeType: "positive",
+      color: "from-green-500 to-emerald-600",
+      bgColor: "from-green-500/10 to-emerald-600/10",
     },
   ];
 
-  const recentContactsList = allowedContacts.slice(0, 5);
+  // Show loading state
+  if (isLoading) {
+    return (
+      <LayoutRouter>
+        <div className="space-y-6 w-full">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </LayoutRouter>
+    );
+  }
+
+  // Note: We don't show error state here because we have fallback to Redux state
+  // The component will continue to work with Redux data if API fails
 
   return (
     <LayoutRouter>
@@ -84,16 +130,19 @@ const Dashboard = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider">
                     <span className="text-muted-foreground">{stat.title}</span>
-                    <div className={`rounded-lg bg-gradient-to-br ${stat.color} p-2`}>
+                    <div
+                      className={`rounded-lg bg-gradient-to-br ${stat.color} p-2`}
+                    >
                       <stat.icon className="h-4 w-4 text-white" />
                     </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold mb-1">
-                    {stat.value}
-                  </div>
-                  <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-xs border-green-500/20">
+                  <div className="text-3xl font-bold mb-1">{stat.value}</div>
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-500/10 text-green-600 text-xs border-green-500/20"
+                  >
                     {stat.change}
                   </Badge>
                 </CardContent>
@@ -115,63 +164,113 @@ const Dashboard = () => {
                   <ContactRound className="h-5 w-5" />
                   Recent Contacts
                 </CardTitle>
-                <Link to="/contacts">
-                  <Button size="sm" className="rounded-lg bg-gradient-to-r from-primary to-secondary text-white">
-                    View All
-                    <ArrowRight className="ml-1 h-3 w-3" />
-                  </Button>
-                </Link>
+                {canView("contact") && (
+                  <Link to="/contacts">
+                    <Button
+                      size="sm"
+                      className="rounded-lg bg-gradient-to-r from-primary to-secondary text-white"
+                    >
+                      View All
+                      <ArrowRight className="ml-1 h-3 w-3" />
+                    </Button>
+                  </Link>
+                )}
               </div>
             </CardHeader>
             <CardContent className="p-4">
               <div className="space-y-2">
-                {recentContactsList.map((contact, idx) => (
-                  <Link
-                    key={contact.id}
-                    to={`/contacts/${contact.id}`}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-border/20 hover:border-primary/30 hover:bg-muted/30 transition-all"
-                  >
-                    {/* Avatar */}
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30 flex items-center justify-center shrink-0">
-                      <span className="text-lg font-bold text-gradient-primary">
-                        {contact.name.charAt(0)}
-                      </span>
-                    </div>
+                {recentContactsList.map((contact, idx) =>
+                  canView("contact") ? (
+                    <Link
+                      key={contact.id}
+                      to={`/contacts/${contact.id}`}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-border/20 hover:border-primary/30 hover:bg-muted/30 transition-all"
+                    >
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30 flex items-center justify-center shrink-0">
+                        <span className="text-lg font-bold text-gradient-primary">
+                          {contact.name.charAt(0)}
+                        </span>
+                      </div>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm mb-0.5 truncate">
-                        {contact.name}
-                      </h3>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Building2 className="h-3 w-3" />
-                        <span className="truncate">{contact.company}</span>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm mb-0.5 truncate">
+                          {contact.name}
+                        </h3>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Building2 className="h-3 w-3" />
+                          <span className="truncate">{contact.company}</span>
+                        </div>
+                      </div>
+
+                      {/* Date */}
+                      <div className="text-xs text-muted-foreground text-right">
+                        {new Date(contact.created_at).toLocaleDateString(
+                          "en-US",
+                          { month: "short", day: "numeric" }
+                        )}
+                      </div>
+                    </Link>
+                  ) : (
+                    <div
+                      key={contact.id}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-border/20 opacity-60"
+                    >
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30 flex items-center justify-center shrink-0">
+                        <span className="text-lg font-bold text-gradient-primary">
+                          {contact.name.charAt(0)}
+                        </span>
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm mb-0.5 truncate">
+                          {contact.name}
+                        </h3>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Building2 className="h-3 w-3" />
+                          <span className="truncate">{contact.company}</span>
+                        </div>
+                      </div>
+
+                      {/* Date */}
+                      <div className="text-xs text-muted-foreground text-right">
+                        {new Date(contact.created_at).toLocaleDateString(
+                          "en-US",
+                          { month: "short", day: "numeric" }
+                        )}
                       </div>
                     </div>
-
-                    {/* Date */}
-                    <div className="text-xs text-muted-foreground text-right">
-                      {new Date(contact.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </div>
-                  </Link>
-                ))}
+                  )
+                )}
               </div>
 
-                {recentContactsList.length === 0 && (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mx-auto mb-3">
-                      <ContactRound className="h-8 w-8 text-primary" />
-                    </div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-1">No contacts yet</p>
-                    <p className="text-xs text-muted-foreground mb-4">Start building your network</p>
+              {recentContactsList.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mx-auto mb-3">
+                    <ContactRound className="h-8 w-8 text-primary" />
+                  </div>
+                  <p className="text-sm font-semibold text-muted-foreground mb-1">
+                    No contacts yet
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Start building your network
+                  </p>
+                  {canCreate("contact") && (
                     <Link to="/contacts/new">
-                      <Button size="sm" className="rounded-lg bg-gradient-to-r from-primary to-secondary">
+                      <Button
+                        size="sm"
+                        className="rounded-lg bg-gradient-to-r from-primary to-secondary"
+                      >
                         <Plus className="mr-1 h-3 w-3" />
                         Add Contact
                       </Button>
                     </Link>
-                  </div>
-                )}
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

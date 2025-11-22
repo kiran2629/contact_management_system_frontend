@@ -30,23 +30,70 @@ export const CommandBarLayout = ({
 }: {
   children: React.ReactNode;
 }) => {
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  // Helper function to get profile photo URL
+  const getProfilePhotoUrl = () => {
+    if (!user?.profile_photo) return null;
+    if (user.profile_photo.startsWith("http")) return user.profile_photo;
+    if (user.profile_photo.startsWith("/"))
+      return `${import.meta.env.VITE_API_URL || "http://localhost:5000"}${
+        user.profile_photo
+      }`;
+    return user.profile_photo;
+  };
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
   const { mode } = useSelector((state: RootState) => state.theme);
   const [commandOpen, setCommandOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", shortcut: "D", desc: "Overview of your CRM" },
-    { icon: Users, label: "Contacts", path: "/contacts", shortcut: "C", desc: "Manage your contacts" },
-    { icon: Activity, label: "Activity", path: "/activity-logs", shortcut: "A", desc: "View system activity" },
-    { icon: Settings, label: "Settings", path: "/settings", shortcut: "S", desc: "Customize preferences" },
-    { icon: UserCircle, label: "Profile", path: "/profile", shortcut: "P", desc: "Your account details" },
+    {
+      icon: LayoutDashboard,
+      label: "Dashboard",
+      path: "/dashboard",
+      shortcut: "D",
+      desc: "Overview of your CRM",
+    },
+    {
+      icon: Users,
+      label: "Contacts",
+      path: "/contacts",
+      shortcut: "C",
+      desc: "Manage your contacts",
+    },
+    {
+      icon: Activity,
+      label: "Activity",
+      path: "/activity-logs",
+      shortcut: "A",
+      desc: "View system activity",
+    },
+    {
+      icon: Settings,
+      label: "Settings",
+      path: "/settings",
+      shortcut: "S",
+      desc: "Customize preferences",
+    },
+    {
+      icon: UserCircle,
+      label: "Profile",
+      path: "/profile",
+      shortcut: "P",
+      desc: "Your account details",
+    },
     ...(user?.role === "Admin"
       ? [
-          { icon: Shield, label: "Admin", path: "/admin/users", shortcut: "X", desc: "System administration" },
+          {
+            icon: Shield,
+            label: "Admin",
+            path: "/admin/users",
+            shortcut: "X",
+            desc: "System administration",
+          },
         ]
       : []),
   ];
@@ -85,7 +132,8 @@ export const CommandBarLayout = ({
   );
 
   // Get current page info
-  const currentPage = navItems.find((item) => isActive(item.path)) || navItems[0];
+  const currentPage =
+    navItems.find((item) => isActive(item.path)) || navItems[0];
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -157,10 +205,17 @@ export const CommandBarLayout = ({
                   className="flex items-center gap-3"
                 >
                   <Link to="/profile" className="group">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
                       <div className="relative">
                         <Avatar className="h-11 w-11 border-2 border-primary/40 shadow-lg ring-4 ring-primary/10 transition-all group-hover:ring-primary/20">
-                          <AvatarImage src={user?.avatar} />
+                          <AvatarImage
+                            src={getProfilePhotoUrl() || undefined}
+                            alt={user?.username}
+                            className="object-cover"
+                          />
                           <AvatarFallback className="bg-gradient-to-br from-primary via-primary to-secondary text-white font-bold">
                             {user?.username?.charAt(0).toUpperCase()}
                           </AvatarFallback>
@@ -226,7 +281,9 @@ export const CommandBarLayout = ({
                     <currentPage.icon className="w-3.5 h-3.5 text-white" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold leading-none">{currentPage.label}</span>
+                    <span className="text-xs font-bold leading-none">
+                      {currentPage.label}
+                    </span>
                     <span className="text-[10px] text-muted-foreground leading-none mt-0.5">
                       {currentPage.desc}
                     </span>
@@ -264,14 +321,21 @@ export const CommandBarLayout = ({
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
                   >
-                    <motion.div whileHover={{ scale: 1.1, rotate: 180 }} whileTap={{ scale: 0.9 }}>
+                    <motion.div
+                      whileHover={{ scale: 1.1, rotate: 180 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => dispatch(toggleTheme())}
                         className="rounded-[14px] h-10 w-10 hover:bg-muted/50"
                       >
-                        {mode === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                        {mode === "light" ? (
+                          <Moon className="h-4 w-4" />
+                        ) : (
+                          <Sun className="h-4 w-4" />
+                        )}
                       </Button>
                     </motion.div>
                   </motion.div>
@@ -281,7 +345,10 @@ export const CommandBarLayout = ({
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
                   >
-                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
                       <Button
                         variant="ghost"
                         size="icon"
@@ -380,7 +447,10 @@ export const CommandBarLayout = ({
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.05 }}
                           >
-                            <Link to={item.path} onClick={() => setCommandOpen(false)}>
+                            <Link
+                              to={item.path}
+                              onClick={() => setCommandOpen(false)}
+                            >
                               <motion.div
                                 whileHover={{ scale: 1.02, x: 5 }}
                                 whileTap={{ scale: 0.98 }}
@@ -393,12 +463,16 @@ export const CommandBarLayout = ({
                                 <div className="flex items-center gap-3">
                                   <div
                                     className={`p-2 rounded-lg ${
-                                      isActive(item.path) ? "bg-white/20" : "bg-primary/10"
+                                      isActive(item.path)
+                                        ? "bg-white/20"
+                                        : "bg-primary/10"
                                     }`}
                                   >
                                     <item.icon className="w-4 h-4" />
                                   </div>
-                                  <span className="font-semibold">{item.label}</span>
+                                  <span className="font-semibold">
+                                    {item.label}
+                                  </span>
                                 </div>
                                 <kbd
                                   className={`px-2 py-1 text-xs rounded border ${
@@ -407,7 +481,10 @@ export const CommandBarLayout = ({
                                       : "bg-muted border-border/30"
                                   }`}
                                 >
-                                  {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"} {item.shortcut}
+                                  {navigator.platform.includes("Mac")
+                                    ? "⌘"
+                                    : "Ctrl"}{" "}
+                                  {item.shortcut}
                                 </kbd>
                               </motion.div>
                             </Link>
@@ -430,7 +507,9 @@ export const CommandBarLayout = ({
                             key={idx}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: (filteredItems.length + idx) * 0.05 }}
+                            transition={{
+                              delay: (filteredItems.length + idx) * 0.05,
+                            }}
                           >
                             <motion.button
                               whileHover={{ scale: 1.02, x: 5 }}
@@ -448,16 +527,23 @@ export const CommandBarLayout = ({
                               <div className="flex items-center gap-3">
                                 <div
                                   className={`p-2 rounded-lg ${
-                                    action.destructive ? "bg-destructive/10" : "bg-primary/10"
+                                    action.destructive
+                                      ? "bg-destructive/10"
+                                      : "bg-primary/10"
                                   }`}
                                 >
                                   <action.icon className="w-4 h-4" />
                                 </div>
-                                <span className="font-semibold">{action.label}</span>
+                                <span className="font-semibold">
+                                  {action.label}
+                                </span>
                               </div>
                               {action.shortcut && (
                                 <kbd className="px-2 py-1 text-xs bg-muted rounded border border-border/30">
-                                  {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"} {action.shortcut}
+                                  {navigator.platform.includes("Mac")
+                                    ? "⌘"
+                                    : "Ctrl"}{" "}
+                                  {action.shortcut}
                                 </kbd>
                               )}
                             </motion.button>
@@ -467,35 +553,46 @@ export const CommandBarLayout = ({
                     </div>
                   )}
 
-                  {filteredItems.length === 0 && filteredActions.length === 0 && (
-                    <div className="text-center py-16">
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 200 }}
-                      >
-                        <Search className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                        <p className="text-muted-foreground font-medium">No results found</p>
-                      </motion.div>
-                    </div>
-                  )}
+                  {filteredItems.length === 0 &&
+                    filteredActions.length === 0 && (
+                      <div className="text-center py-16">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 200 }}
+                        >
+                          <Search className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                          <p className="text-muted-foreground font-medium">
+                            No results found
+                          </p>
+                        </motion.div>
+                      </div>
+                    )}
                 </div>
 
                 {/* Footer */}
                 <div className="relative p-3 border-t border-border/20 text-xs text-muted-foreground flex items-center justify-between bg-muted/20">
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1">
-                      <kbd className="px-2 py-1 bg-background rounded border border-border/30">↑</kbd>
-                      <kbd className="px-2 py-1 bg-background rounded border border-border/30">↓</kbd>
+                      <kbd className="px-2 py-1 bg-background rounded border border-border/30">
+                        ↑
+                      </kbd>
+                      <kbd className="px-2 py-1 bg-background rounded border border-border/30">
+                        ↓
+                      </kbd>
                       Navigate
                     </span>
                     <span className="flex items-center gap-1">
-                      <kbd className="px-2 py-1 bg-background rounded border border-border/30">Enter</kbd>
+                      <kbd className="px-2 py-1 bg-background rounded border border-border/30">
+                        Enter
+                      </kbd>
                       Select
                     </span>
                   </div>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-2 py-1 bg-background rounded border border-border/30">Esc</kbd>
+                    <kbd className="px-2 py-1 bg-background rounded border border-border/30">
+                      Esc
+                    </kbd>
                     Close
                   </span>
                 </div>

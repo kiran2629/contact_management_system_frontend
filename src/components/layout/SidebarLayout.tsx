@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { motion, AnimatePresence } from 'framer-motion';
-import { RootState } from '@/store/store';
-import { logout } from '@/store/slices/authSlice';
-import { toggleTheme } from '@/store/slices/themeSlice';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { motion, AnimatePresence } from "framer-motion";
+import { RootState } from "@/store/store";
+import { logout } from "@/store/slices/authSlice";
+import { toggleTheme } from "@/store/slices/themeSlice";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard,
   Users,
@@ -23,33 +23,44 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-} from 'lucide-react';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { toast } from "sonner";
 
 export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+
+  // Helper function to get profile photo URL
+  const getProfilePhotoUrl = () => {
+    if (!user?.profile_photo) return null;
+    if (user.profile_photo.startsWith("http")) return user.profile_photo;
+    if (user.profile_photo.startsWith("/"))
+      return `${import.meta.env.VITE_API_URL || "http://localhost:5000"}${
+        user.profile_photo
+      }`;
+    return user.profile_photo;
+  };
+  const dispatch = useDispatch();
   const { mode } = useSelector((state: RootState) => state.theme);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: Users, label: 'Contacts', path: '/contacts' },
-    { icon: Activity, label: 'Activity', path: '/activity-logs' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
-    ...(user?.role === 'Admin' ? [
-      { icon: Users, label: 'User Management', path: '/admin/users' },
-      { icon: Shield, label: 'Permissions', path: '/admin/permissions' },
-    ] : []),
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+    { icon: Users, label: "Contacts", path: "/contacts" },
+    { icon: Activity, label: "Activity", path: "/activity-logs" },
+    { icon: Settings, label: "Settings", path: "/settings" },
+    ...(user?.role === "Admin"
+      ? [{ icon: Users, label: "User Management", path: "/admin/users" }]
+      : []),
   ];
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   const handleLogout = () => {
     dispatch(logout());
-    toast.success('Logged out successfully');
+    toast.success("Logged out successfully");
   };
 
   const handleThemeToggle = () => {
@@ -74,7 +85,7 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
               {!collapsed && (
                 <motion.span
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
+                  animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   className="text-xl font-black text-gradient-shine whitespace-nowrap"
                 >
@@ -89,7 +100,11 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
             onClick={() => setCollapsed(!collapsed)}
             className="shrink-0 w-8 h-8"
           >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronLeft className="w-4 h-4" />
+            )}
           </Button>
         </div>
 
@@ -102,8 +117,8 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
                 to={item.path}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                   isActive(item.path)
-                    ? 'bg-gradient-to-r from-primary to-secondary text-white'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    ? "bg-gradient-to-r from-primary to-secondary text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
               >
                 <item.icon className="w-5 h-5 shrink-0" />
@@ -111,7 +126,7 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
                   {!collapsed && (
                     <motion.span
                       initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: 'auto' }}
+                      animate={{ opacity: 1, width: "auto" }}
                       exit={{ opacity: 0, width: 0 }}
                       className="font-medium whitespace-nowrap"
                     >
@@ -126,9 +141,17 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
 
         {/* User Profile */}
         <div className="p-4 border-t border-border/20">
-          <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
+          <div
+            className={`flex items-center gap-3 ${
+              collapsed ? "justify-center" : ""
+            }`}
+          >
             <Avatar className="h-10 w-10 border-2 border-primary/30">
-              <AvatarImage src={user?.avatar} />
+              <AvatarImage
+                src={getProfilePhotoUrl() || undefined}
+                alt={user?.username}
+                className="object-cover"
+              />
               <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold">
                 {user?.username?.charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -137,11 +160,13 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
               {!collapsed && (
                 <motion.div
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
+                  animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   className="flex-1 min-w-0"
                 >
-                  <p className="text-sm font-semibold truncate">{user?.username}</p>
+                  <p className="text-sm font-semibold truncate">
+                    {user?.username}
+                  </p>
                   <Badge className="text-xs bg-primary/10 text-primary border-primary/30 px-1.5 py-0">
                     {user?.role}
                   </Badge>
@@ -150,20 +175,26 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
             </AnimatePresence>
           </div>
 
-          <div className={`flex gap-2 mt-3 ${collapsed ? 'flex-col' : ''}`}>
+          <div className={`flex gap-2 mt-3 ${collapsed ? "flex-col" : ""}`}>
             <Button
               variant="outline"
               size="sm"
               onClick={handleThemeToggle}
-              className={collapsed ? 'w-full' : 'flex-1'}
+              className={collapsed ? "w-full" : "flex-1"}
             >
-              {mode === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+              {mode === "light" ? (
+                <Moon className="w-4 h-4" />
+              ) : (
+                <Sun className="w-4 h-4" />
+              )}
               {!collapsed && <span className="ml-1">Theme</span>}
             </Button>
             <Button
               size="sm"
               onClick={handleLogout}
-              className={`${collapsed ? 'w-full' : 'flex-1'} bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white`}
+              className={`${
+                collapsed ? "w-full" : "flex-1"
+              } bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white`}
             >
               <LogOut className="w-4 h-4" />
               {!collapsed && <span className="ml-1">Logout</span>}
@@ -190,13 +221,23 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
               className="fixed top-0 left-0 bottom-0 w-72 bg-card border-r border-border/30 z-50 lg:hidden flex flex-col"
             >
               <div className="h-16 flex items-center justify-between px-4 border-b border-border/20">
-                <Link to="/dashboard" className="flex items-center gap-3" onClick={() => setMobileOpen(false)}>
+                <Link
+                  to="/dashboard"
+                  className="flex items-center gap-3"
+                  onClick={() => setMobileOpen(false)}
+                >
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-xl font-black text-gradient-shine">CRM</span>
+                  <span className="text-xl font-black text-gradient-shine">
+                    CRM
+                  </span>
                 </Link>
-                <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMobileOpen(false)}
+                >
                   <X className="w-5 h-5" />
                 </Button>
               </div>
@@ -210,8 +251,8 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
                       onClick={() => setMobileOpen(false)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                         isActive(item.path)
-                          ? 'bg-gradient-to-r from-primary to-secondary text-white'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                          ? "bg-gradient-to-r from-primary to-secondary text-white"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       }`}
                     >
                       <item.icon className="w-5 h-5" />
@@ -224,7 +265,11 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
               <div className="p-4 border-t border-border/20">
                 <div className="flex items-center gap-3 mb-3">
                   <Avatar className="h-10 w-10 border-2 border-primary/30">
-                    <AvatarImage src={user?.avatar} />
+                    <AvatarImage
+                      src={getProfilePhotoUrl() || undefined}
+                      alt={user?.username}
+                      className="object-cover"
+                    />
                     <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold">
                       {user?.username?.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -237,11 +282,24 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Button variant="outline" size="sm" onClick={handleThemeToggle} className="w-full">
-                    {mode === 'light' ? <Moon className="w-4 h-4 mr-2" /> : <Sun className="w-4 h-4 mr-2" />}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleThemeToggle}
+                    className="w-full"
+                  >
+                    {mode === "light" ? (
+                      <Moon className="w-4 h-4 mr-2" />
+                    ) : (
+                      <Sun className="w-4 h-4 mr-2" />
+                    )}
                     Toggle Theme
                   </Button>
-                  <Button size="sm" onClick={handleLogout} className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white">
+                  <Button
+                    size="sm"
+                    onClick={handleLogout}
+                    className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
+                  >
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
                   </Button>
@@ -266,7 +324,8 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
               <Menu className="w-5 h-5" />
             </Button>
             <h1 className="text-xl font-bold text-gradient-shine">
-              {navItems.find(item => isActive(item.path))?.label || 'Dashboard'}
+              {navItems.find((item) => isActive(item.path))?.label ||
+                "Dashboard"}
             </h1>
           </div>
 
@@ -280,7 +339,11 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
               onClick={handleThemeToggle}
               className="rounded-lg h-9 w-9 hidden md:flex"
             >
-              {mode === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              {mode === "light" ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -292,7 +355,11 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
             </Button>
             <Link to="/profile" className="hidden md:block">
               <Avatar className="h-9 w-9 border-2 border-primary/30 cursor-pointer hover:scale-105 transition-transform">
-                <AvatarImage src={user?.avatar} />
+                <AvatarImage
+                  src={getProfilePhotoUrl() || undefined}
+                  alt={user?.username}
+                  className="object-cover"
+                />
                 <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold text-sm">
                   {user?.username?.charAt(0).toUpperCase()}
                 </AvatarFallback>
@@ -302,11 +369,8 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto p-4 lg:p-6">{children}</main>
       </div>
     </div>
   );
 };
-

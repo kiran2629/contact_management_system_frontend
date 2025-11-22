@@ -9,7 +9,9 @@ import { setToken, setRefreshToken, logout } from "../slices/authSlice";
 
 // API Base URL Configuration:
 // - Development: Uses .env file (VITE_API_URL=http://localhost:5000)
-// - Production: Uses .env.production file (VITE_API_URL=https://crmnodeapi.onrender.com)
+// - Production: Uses .env.production file (VITE_API_URL=<your-backend-api-url>)
+// - Frontend Production URL: https://crm-b7wf.onrender.com/
+// Note: VITE_API_URL should point to your backend API server, not the frontend URL
 // Vite automatically loads the correct .env file based on the build mode
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -41,13 +43,17 @@ export const baseQuery: BaseQueryFn<
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
   // Check if body is FormData and remove Content-Type header if so
-  const requestArgs = typeof args === 'string' ? { url: args } : args;
+  const requestArgs = typeof args === "string" ? { url: args } : args;
   if (requestArgs.body instanceof FormData) {
     // Create a modified args without Content-Type header
-    const modifiedArgs = typeof args === 'string' 
-      ? { url: args, headers: {} }
-      : { ...args, headers: { ...(args.headers || {}), 'Content-Type': undefined } };
-    
+    const modifiedArgs =
+      typeof args === "string"
+        ? { url: args, headers: {} }
+        : {
+            ...args,
+            headers: { ...(args.headers || {}), "Content-Type": undefined },
+          };
+
     // Use a custom fetch that doesn't set Content-Type for FormData
     const customBaseQuery = fetchBaseQuery({
       baseUrl: API_BASE_URL,
@@ -62,11 +68,12 @@ export const baseQuery: BaseQueryFn<
         return headers;
       },
     });
-    
+
     let result = await customBaseQuery(modifiedArgs, api, extraOptions);
-    
+
     // Handle token refresh if needed
-    const url = typeof modifiedArgs === "string" ? modifiedArgs : modifiedArgs.url;
+    const url =
+      typeof modifiedArgs === "string" ? modifiedArgs : modifiedArgs.url;
     const isRefreshRequest = url?.includes("/refresh-token");
     const isLoginRequest = url?.includes("/login");
     const isLogoutRequest = url?.includes("/logout");
@@ -101,7 +108,11 @@ export const baseQuery: BaseQueryFn<
           store.dispatch(setToken(refreshData.accessToken));
           store.dispatch(setRefreshToken(refreshData.refreshToken));
 
-          const retryResult = await customBaseQuery(modifiedArgs, api, extraOptions);
+          const retryResult = await customBaseQuery(
+            modifiedArgs,
+            api,
+            extraOptions
+          );
           return retryResult;
         } else {
           store.dispatch(logout());
@@ -119,7 +130,7 @@ export const baseQuery: BaseQueryFn<
 
     return result;
   }
-  
+
   let result = await baseQueryWithAuth(args, api, extraOptions);
 
   // Check if this is a refresh token request to avoid infinite loops
