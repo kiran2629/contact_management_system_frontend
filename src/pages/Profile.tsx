@@ -43,8 +43,10 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/ai-features/localization/useTranslation";
 
 const Profile = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { user: reduxUser } = useSelector((state: RootState) => state.auth);
   const { mode } = useSelector((state: RootState) => state.theme);
@@ -285,7 +287,7 @@ const Profile = () => {
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading profile...</p>
+              <p className="text-muted-foreground">{t("loading_profile")}</p>
             </div>
           </div>
         </div>
@@ -301,10 +303,10 @@ const Profile = () => {
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <p className="text-destructive mb-4">
-                Failed to load profile data
+                {t("failed_to_load_profile")}
               </p>
               <Button onClick={() => refetch()} variant="outline">
-                Retry
+                {t("retry")}
               </Button>
             </div>
           </div>
@@ -319,7 +321,7 @@ const Profile = () => {
       <LayoutRouter>
         <div className="space-y-6 w-full">
           <div className="flex items-center justify-center min-h-[400px]">
-            <p className="text-muted-foreground">No user data available</p>
+            <p className="text-muted-foreground">{t("no_user_data")}</p>
           </div>
         </div>
       </LayoutRouter>
@@ -339,10 +341,10 @@ const Profile = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-xl font-semibold text-foreground">
-                    Personal Information
+                    {t("personal_information")}
                   </CardTitle>
                   <CardDescription className="text-sm text-muted-foreground mt-1">
-                    Your account details and role information
+                    {t("your_account_details")}
                   </CardDescription>
                 </div>
                 <Button
@@ -514,19 +516,19 @@ const Profile = () => {
                           {user?.role === "Admin" && (
                             <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 px-3 py-1 text-xs font-medium flex items-center gap-1.5 w-fit">
                               <Crown className="h-3.5 w-3.5" />
-                              <span>Administrator</span>
+                              <span>{t("administrator")}</span>
                             </Badge>
                           )}
                           {user?.role === "HR" && (
                             <Badge className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white border-0 px-3 py-1 text-xs font-medium flex items-center gap-1.5 w-fit">
                               <Users className="h-3.5 w-3.5" />
-                              <span>HR Manager</span>
+                              <span>{t("hr_manager")}</span>
                             </Badge>
                           )}
                           {user?.role === "User" && (
                             <Badge className="bg-gradient-to-r from-pink-600 to-rose-600 text-white border-0 px-3 py-1 text-xs font-medium flex items-center gap-1.5 w-fit">
                               <User className="h-3.5 w-3.5" />
-                              <span>Standard User</span>
+                              <span>{t("standard_user")}</span>
                             </Badge>
                           )}
                         </div>
@@ -547,19 +549,18 @@ const Profile = () => {
                         <div className="flex items-start gap-2 text-sm text-muted-foreground">
                           <CheckCircle2 className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
                           <p>
-                            Full system access with complete control over users,
-                            contacts, and permissions
+                            {t("admin_full_access")}
                           </p>
                         </div>
                       )}
                       {user?.role === "HR" && (
                         <p className="text-sm text-muted-foreground">
-                          Manage HR-related contacts and employee information
+                          {t("hr_manage_contacts")}
                         </p>
                       )}
                       {user?.role === "User" && (
                         <p className="text-sm text-muted-foreground">
-                          Access to public contacts and basic features
+                          {t("user_basic_access")}
                         </p>
                       )}
                     </div>

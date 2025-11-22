@@ -54,6 +54,7 @@ import {
   Edit3,
   FileText,
 } from "lucide-react";
+import { useTranslation } from "@/ai-features/localization/useTranslation";
 
 // Categories list
 const CATEGORIES = [
@@ -212,6 +213,7 @@ const addContactSchema = z.object({
 type AddContactForm = z.infer<typeof addContactSchema>;
 
 const AddContact = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -392,12 +394,12 @@ const AddContact = () => {
 
             <div>
               <h1 className="text-4xl font-black text-gradient-shine">
-                {isEditMode ? "Edit Contact" : "Create New Contact"}
+                {isEditMode ? t("edit_contact_info") : t("create_new_contact")}
               </h1>
               <p className="text-muted-foreground text-lg font-medium mt-1">
                 {isEditMode
-                  ? "Update contact information in your CRM"
-                  : "Add a new contact to your professional network"}
+                  ? t("update_contact_info")
+                  : t("add_contact_to_network")}
               </p>
             </div>
           </div>
@@ -416,10 +418,10 @@ const AddContact = () => {
             <CardHeader className="border-b-2 border-border/20 pb-6 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5">
               <CardTitle className="text-2xl font-bold flex items-center gap-2">
                 <User className="h-6 w-6 text-primary" />
-                Contact Information
+                {t("contact_information")}
               </CardTitle>
               <CardDescription className="text-base">
-                Fill in all required fields marked with{" "}
+                {t("fill_required_fields")}{" "}
                 <span className="text-destructive font-bold">*</span>
               </CardDescription>
             </CardHeader>
@@ -442,7 +444,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                               <User className="h-4 w-4 text-primary" />
                             </div>
-                            Name <span className="text-destructive">*</span>
+                            {t("name")} <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -466,7 +468,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
                               <Mail className="h-4 w-4 text-secondary" />
                             </div>
-                            Email <span className="text-destructive">*</span>
+                            {t("email")} <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -491,7 +493,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
                               <Phone className="h-4 w-4 text-accent" />
                             </div>
-                            Phone <span className="text-destructive">*</span>
+                            {t("phone")} <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -521,7 +523,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                               <Building2 className="h-4 w-4 text-primary" />
                             </div>
-                            Company <span className="text-destructive">*</span>
+                            {t("company")} <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -545,7 +547,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
                               <Tags className="h-4 w-4 text-secondary" />
                             </div>
-                            Categories{" "}
+                            {t("categories")}{" "}
                             <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
@@ -578,7 +580,7 @@ const AddContact = () => {
                               <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
                                 <Calendar className="h-4 w-4 text-accent" />
                               </div>
-                              Birthday
+                              {t("birthday")}
                             </FormLabel>
                             <FormControl>
                               <Controller
@@ -610,7 +612,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
                               <Linkedin className="h-4 w-4 text-blue-500" />
                             </div>
-                            LinkedIn URL{" "}
+                            {t("linkedin_url")}{" "}
                             <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
@@ -635,7 +637,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
                               <MapPin className="h-4 w-4 text-secondary" />
                             </div>
-                            Address <span className="text-destructive">*</span>
+                            {t("address")} <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Textarea
@@ -657,7 +659,7 @@ const AddContact = () => {
                         <FormItem className="md:col-span-2">
                           <FormLabel className="flex items-center gap-2">
                             <Tags className="h-4 w-4" />
-                            Tags
+                            {t("tags")}
                           </FormLabel>
                           <FormControl>
                             <Controller
@@ -690,7 +692,7 @@ const AddContact = () => {
                         onClick={() => navigate("/contacts")}
                         className="w-full sm:w-auto glass-card border-2 px-8 py-6 text-base font-semibold rounded-xl"
                       >
-                        Cancel
+                        {t("cancel")}
                       </Button>
                     </motion.div>
 
@@ -710,13 +712,13 @@ const AddContact = () => {
                           <>
                             <ButtonLoader size={20} />
                             <span className="ml-2">
-                              {isEditMode ? "Updating..." : "Saving..."}
+                              {isEditMode ? t("updating") : t("saving")}
                             </span>
                           </>
                         ) : (
                           <>
                             <Save className="mr-2 h-5 w-5" />
-                            {isEditMode ? "Update Contact" : "Save Contact"}
+                            {isEditMode ? t("update_contact") : t("save_contact")}
                           </>
                         )}
                       </Button>

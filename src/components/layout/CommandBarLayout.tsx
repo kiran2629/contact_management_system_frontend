@@ -24,12 +24,14 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/ai-features/localization/useTranslation";
 
 export const CommandBarLayout = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
+  const { t } = useTranslation();
   const { user } = useSelector((state: RootState) => state.auth);
 
   // Helper function to get profile photo URL
@@ -52,35 +54,35 @@ export const CommandBarLayout = ({
   const navItems = [
     {
       icon: LayoutDashboard,
-      label: "Dashboard",
+      label: t("dashboard"),
       path: "/dashboard",
       shortcut: "D",
       desc: "Overview of your CRM",
     },
     {
       icon: Users,
-      label: "Contacts",
+      label: t("contacts"),
       path: "/contacts",
       shortcut: "C",
       desc: "Manage your contacts",
     },
     {
       icon: Activity,
-      label: "Activity",
+      label: t("activity_logs"),
       path: "/activity-logs",
       shortcut: "A",
       desc: "View system activity",
     },
     {
       icon: Settings,
-      label: "Settings",
+      label: t("settings"),
       path: "/settings",
       shortcut: "S",
       desc: "Customize preferences",
     },
     {
       icon: UserCircle,
-      label: "Profile",
+      label: t("profile"),
       path: "/profile",
       shortcut: "P",
       desc: "Your account details",
@@ -89,7 +91,7 @@ export const CommandBarLayout = ({
       ? [
           {
             icon: Shield,
-            label: "Admin",
+            label: t("admin_users"),
             path: "/admin/users",
             shortcut: "X",
             desc: "System administration",
