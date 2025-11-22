@@ -25,8 +25,20 @@ This project uses environment variables for API configuration. See `ENV_SETUP.md
 
 **Important:** `VITE_API_URL` should point to your **backend API server**, not the frontend URL.
 
+### Render Static Site Deployment
+
+For deploying to Render as a static site, see `RENDER_DEPLOYMENT.md` for complete instructions.
+
+**Key Points:**
+
+- Build command: `npm run build`
+- Publish directory: `dist`
+- The `public/_redirects` file handles SPA routing (prevents 404 on refresh)
+- Set `VITE_API_URL` in Render's environment variables
+
 For more details, see:
 
+- `RENDER_DEPLOYMENT.md` - Render deployment guide
 - `ENV_SETUP.md` - Environment variables setup guide
 - `QUICK_START.md` - Quick start guide
 

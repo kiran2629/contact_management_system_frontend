@@ -545,6 +545,20 @@ const AdminUsers = () => {
     return profilePhoto;
   };
 
+  // Helper function to parse permissions (can be string or object)
+  const parsePermissions = (permissions: any): any => {
+    if (!permissions) return undefined;
+    if (typeof permissions === "string") {
+      try {
+        return JSON.parse(permissions);
+      } catch (e) {
+        console.error("Error parsing permissions:", e);
+        return undefined;
+      }
+    }
+    return permissions;
+  };
+
   const handleEdit = (user: any) => {
     setSelectedUser(user);
     setProfileImageFile(null);
@@ -2004,345 +2018,353 @@ const AdminUsers = () => {
                 </Card>
 
                 {/* Permissions */}
-                {userDetailData.permissions && (
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Settings className="h-5 w-5 text-primary" />
-                        <h3 className="text-lg font-semibold">Permissions</h3>
-                      </div>
-                      <div className="space-y-6">
-                        {/* Contact Permissions */}
-                        {userDetailData.permissions.contact && (
-                          <div>
-                            <h4 className="font-medium mb-3 flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
-                              Contact
-                            </h4>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.contact.create
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.contact.create ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Create
-                                </Badge>
-                              </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.contact.read
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.contact.read ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Read
-                                </Badge>
-                              </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.contact.update
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.contact.update ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Update
-                                </Badge>
-                              </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.contact.delete
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.contact.delete ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Delete
-                                </Badge>
-                              </div>
-                            </div>
+                {userDetailData.permissions &&
+                  (() => {
+                    const parsedPermissions = parsePermissions(
+                      userDetailData.permissions
+                    );
+                    return parsedPermissions ? (
+                      <Card>
+                        <CardContent className="p-6">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Settings className="h-5 w-5 text-primary" />
+                            <h3 className="text-lg font-semibold">
+                              Permissions
+                            </h3>
                           </div>
-                        )}
+                          <div className="space-y-6">
+                            {/* Contact Permissions */}
+                            {parsedPermissions.contact ? (
+                              <div>
+                                <h4 className="font-medium mb-3 flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  Contact
+                                </h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.contact.create
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.contact.create ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Create
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.contact.read
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.contact.read ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Read
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.contact.update
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.contact.update ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Update
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.contact.delete
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.contact.delete ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Delete
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null}
 
-                        {/* Notes Permissions */}
-                        {userDetailData.permissions.notes && (
-                          <div>
-                            <h4 className="font-medium mb-3 flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
-                              Notes
-                            </h4>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.notes.create
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.notes.create ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Create
-                                </Badge>
+                            {/* Notes Permissions */}
+                            {parsedPermissions.notes ? (
+                              <div>
+                                <h4 className="font-medium mb-3 flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  Notes
+                                </h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.notes.create
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.notes.create ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Create
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.notes.read
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.notes.read ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Read
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.notes.update
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.notes.update ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Update
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.notes.delete
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.notes.delete ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Delete
+                                    </Badge>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.notes.read
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.notes.read ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Read
-                                </Badge>
-                              </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.notes.update
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.notes.update ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Update
-                                </Badge>
-                              </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.notes.delete
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.notes.delete ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Delete
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                            ) : null}
 
-                        {/* Tasks Permissions */}
-                        {userDetailData.permissions.tasks && (
-                          <div>
-                            <h4 className="font-medium mb-3 flex items-center gap-2">
-                              <Briefcase className="h-4 w-4 text-muted-foreground" />
-                              Tasks
-                            </h4>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.tasks.create
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.tasks.create ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Create
-                                </Badge>
+                            {/* Tasks Permissions */}
+                            {parsedPermissions.tasks ? (
+                              <div>
+                                <h4 className="font-medium mb-3 flex items-center gap-2">
+                                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                  Tasks
+                                </h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.tasks.create
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.tasks.create ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Create
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.tasks.read
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.tasks.read ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Read
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.tasks.update
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.tasks.update ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Update
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.tasks.delete
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.tasks.delete ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Delete
+                                    </Badge>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.tasks.read
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.tasks.read ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Read
-                                </Badge>
-                              </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.tasks.update
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.tasks.update ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Update
-                                </Badge>
-                              </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.tasks.delete
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.tasks.delete ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Delete
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                            ) : null}
 
-                        {/* CRM Features */}
-                        {userDetailData.permissions.crm_features && (
-                          <div>
-                            <h4 className="font-medium mb-3 flex items-center gap-2">
-                              <Star className="h-4 w-4 text-muted-foreground" />
-                              CRM Features
-                            </h4>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.crm_features
-                                      .view_birthdays
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.crm_features
-                                    .view_birthdays ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  View Birthdays
-                                </Badge>
+                            {/* CRM Features */}
+                            {parsedPermissions.crm_features ? (
+                              <div>
+                                <h4 className="font-medium mb-3 flex items-center gap-2">
+                                  <Star className="h-4 w-4 text-muted-foreground" />
+                                  CRM Features
+                                </h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.crm_features
+                                          .view_birthdays
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.crm_features
+                                        .view_birthdays ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      View Birthdays
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.crm_features
+                                          .view_statistics
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.crm_features
+                                        .view_statistics ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      View Statistics
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.crm_features
+                                          .export_contacts
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.crm_features
+                                        .export_contacts ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Export Contacts
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
+                                    <Badge
+                                      variant={
+                                        parsedPermissions.crm_features
+                                          .import_contacts
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      className="w-full justify-center"
+                                    >
+                                      {parsedPermissions.crm_features
+                                        .import_contacts ? (
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                      )}
+                                      Import Contacts
+                                    </Badge>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.crm_features
-                                      .view_statistics
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.crm_features
-                                    .view_statistics ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  View Statistics
-                                </Badge>
-                              </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.crm_features
-                                      .export_contacts
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.crm_features
-                                    .export_contacts ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Export Contacts
-                                </Badge>
-                              </div>
-                              <div className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card">
-                                <Badge
-                                  variant={
-                                    userDetailData.permissions.crm_features
-                                      .import_contacts
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="w-full justify-center"
-                                >
-                                  {userDetailData.permissions.crm_features
-                                    .import_contacts ? (
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                  )}
-                                  Import Contacts
-                                </Badge>
-                              </div>
-                            </div>
+                            ) : null}
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                        </CardContent>
+                      </Card>
+                    ) : null;
+                  })()}
 
                 {/* Account Information */}
                 <Card>
