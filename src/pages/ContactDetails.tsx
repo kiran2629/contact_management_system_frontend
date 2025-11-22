@@ -95,13 +95,17 @@ const ContactDetails = () => {
     if (!contact || !id) return;
 
     try {
-      await deleteContactMutation(String(id)).unwrap();
-      toast.success("Contact deleted successfully");
+      console.log('Deleting contact with ID:', id);
+      const result = await deleteContactMutation(String(id)).unwrap();
+      console.log('Delete result:', result);
+      toast.success(result?.message || "Contact deleted successfully");
       navigate("/contacts");
     } catch (error: any) {
+      console.error('Delete error:', error);
       toast.error(
         error?.data?.message ||
           error?.data?.error ||
+          error?.message ||
           "Failed to delete contact. Please try again."
       );
     }
@@ -359,7 +363,7 @@ const ContactDetails = () => {
           )}
                 </div>
 
-                    {/* 🎨 Main Contact Card */}
+        {/* 🎨 Main Contact Card */}
                     <div className="flex-1 overflow-y-auto p-3 md:p-4">
                       <Card className="border border-border/30 shadow-sm overflow-hidden rounded-lg">
                         {/* Header */}
@@ -382,13 +386,13 @@ const ContactDetails = () => {
                                   {contact.name.charAt(0).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
-                            </div>
+                  </div>
 
-                            {/* Info */}
-                            <div className="flex-1">
+                {/* Info */}
+                <div className="flex-1">
                               <CardTitle className="text-lg md:text-xl font-semibold mb-1.5 text-foreground">
-                                {contact.name}
-                              </CardTitle>
+                      {contact.name}
+                    </CardTitle>
 
                   {/* Categories */}
                   <div className="flex flex-wrap gap-2">
@@ -408,7 +412,7 @@ const ContactDetails = () => {
                       {contact.tags.map((tag) => (
                         <Badge
                           key={tag}
-                          variant="outline"
+                            variant="outline"
                           className="rounded-md border text-xs"
                           >
                             #{tag}
@@ -421,22 +425,22 @@ const ContactDetails = () => {
             </CardHeader>
 
                         <CardContent className="space-y-4 p-4">
-                          {/* 📞 Contact Information Grid */}
+              {/* 📞 Contact Information Grid */}
                           <div>
                             <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
                               <Globe className="h-3.5 w-3.5 text-primary" />
-                              Contact Information
-                            </h3>
+                  Contact Information
+                </h3>
 
                             <div className="grid gap-2 md:grid-cols-2">
-                              {/* Email */}
+                  {/* Email */}
                               <a
-                                href={`mailto:${contact.email}`}
+                    href={`mailto:${contact.email}`}
                                 className="flex items-center gap-2 p-2.5 rounded-md border border-border/30 hover:border-primary/50 bg-card hover:bg-primary/5 transition-colors group/item"
-                              >
+                  >
                                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 border border-primary/20 shrink-0">
                                   <Mail className="h-3.5 w-3.5 text-primary" />
-                                </div>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                         Email
@@ -447,14 +451,14 @@ const ContactDetails = () => {
                     </div>
                   </a>
 
-                              {/* Phone */}
+                  {/* Phone */}
                               <a
-                                href={`tel:${contact.phone}`}
+                    href={`tel:${contact.phone}`}
                                 className="flex items-center gap-2 p-2.5 rounded-md border border-border/30 hover:border-secondary/50 bg-card hover:bg-secondary/5 transition-colors group/item"
-                              >
+                  >
                                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary/10 border border-secondary/20 shrink-0">
                                   <Phone className="h-3.5 w-3.5 text-secondary" />
-                                </div>
+                    </div>
                     <div className="flex-1">
                       <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                         Phone
@@ -465,11 +469,11 @@ const ContactDetails = () => {
                     </div>
                   </a>
 
-                              {/* Company */}
+                  {/* Company */}
                               <div className="flex items-center gap-2 p-2.5 rounded-md border border-border/30 bg-card">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent/10 border border-accent/20 shrink-0">
                                   <Building2 className="h-3.5 w-3.5 text-accent" />
-                                </div>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                         Company
@@ -499,22 +503,22 @@ const ContactDetails = () => {
                 </div>
               </div>
 
-                          <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
+              <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
 
-                          {/* 🌍 Additional Information */}
+              {/* 🌍 Additional Information */}
                           <div>
                             <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
                               <Sparkles className="h-3.5 w-3.5 text-secondary" />
-                              Additional Details
-                            </h3>
+                  Additional Details
+                </h3>
 
                             <div className="space-y-2">
-                              {/* Address */}
-                              {contact.address && (
+                  {/* Address */}
+                  {contact.address && (
                                 <div className="flex items-start gap-2 p-2.5 rounded-md border border-border/20 bg-card">
                                   <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary/10 shrink-0">
                                     <MapPin className="h-3.5 w-3.5 text-secondary" />
-                                  </div>
+                      </div>
                       <div>
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                           Address
@@ -526,17 +530,17 @@ const ContactDetails = () => {
                     </div>
                   )}
 
-                              {/* LinkedIn */}
-                              {contact.linkedinUrl && (
+                  {/* LinkedIn */}
+                  {contact.linkedinUrl && (
                                 <a
-                                  href={contact.linkedinUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                      href={contact.linkedinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
                                   className="flex items-center gap-2 p-2.5 rounded-md border border-border/20 hover:border-blue-500/50 bg-card hover:bg-blue-500/5 transition-colors group/link"
-                                >
+                    >
                                   <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500/10 shrink-0">
                                     <Linkedin className="h-3.5 w-3.5 text-blue-500" />
-                                  </div>
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                           LinkedIn Profile
@@ -549,12 +553,12 @@ const ContactDetails = () => {
                     </a>
                   )}
 
-                              {/* Birthday */}
-                              {contact.birthday && (
+                  {/* Birthday */}
+                  {contact.birthday && (
                                 <div className="flex items-center gap-2 p-2.5 rounded-md border border-border/20 bg-card">
                                   <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent/10 shrink-0">
                                     <Calendar className="h-3.5 w-3.5 text-accent" />
-                                  </div>
+                      </div>
                       <div>
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                           Birthday
@@ -572,22 +576,113 @@ const ContactDetails = () => {
               </div>
 
               {/* Notes Section */}
-              {contact.notes && (
-                <>
                   <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
-                  <div className="p-4 rounded-lg border border-border/30 bg-muted/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FileText className="h-4 w-4 text-primary" />
+              <div className="p-4 rounded-lg border border-border/30 bg-muted/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className="h-4 w-4 text-primary" />
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Notes
                       </p>
+                  {contact.contactNotes && contact.contactNotes.length > 0 && (
+                    <Badge variant="outline" className="text-[10px] px-2 py-0 h-5">
+                      {contact.contactNotes.length}
+                    </Badge>
+                  )}
+                </div>
+
+                {contact.contactNotes && contact.contactNotes.length > 0 ? (
+                  <div className="space-y-3">
+                    {contact.contactNotes.map((note: any) => (
+                      <div
+                        key={note._id}
+                        className="p-3 rounded-md border border-border/20 bg-card hover:bg-muted/50 transition-colors w-full"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                              <span className="text-[11px] font-bold text-primary">
+                                {note.userId?.userName?.charAt(0)?.toUpperCase() || 'U'}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-foreground">
+                                {note.userId?.userName || 'Unknown User'}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {new Date(note.createdAt).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          {note.sentiment && (
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] px-2 py-0 h-5 ${
+                                note.sentiment === 'positive'
+                                  ? 'border-green-500/30 text-green-500 bg-green-500/10'
+                                  : note.sentiment === 'negative'
+                                  ? 'border-red-500/30 text-red-500 bg-red-500/10'
+                                  : 'border-muted-foreground/30'
+                              }`}
+                            >
+                              {note.sentiment}
+                            </Badge>
+                          )}
                     </div>
-                    <p className="text-sm text-foreground whitespace-pre-wrap">
-                      {contact.notes}
-                    </p>
+                        <div className="mt-3 pt-3 border-t border-border/10">
+                          <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words min-w-0 w-full overflow-visible">
+                            {(() => {
+                              // Get note text - ensure it's a string and not split
+                              let noteText = note.note || note.content || note.text || 'No content';
+                              
+                              // Ensure it's a string, not an array
+                              if (Array.isArray(noteText)) {
+                                noteText = noteText.join('');
+                              }
+                              
+                              // Convert to string and ensure it's not being split
+                              const fullText = String(noteText);
+                              
+                              console.log('Rendering note:', note._id);
+                              console.log('Note object:', note);
+                              console.log('Note text value:', noteText);
+                              console.log('Note text type:', typeof noteText);
+                              console.log('Note text length:', fullText.length);
+                              console.log('Full note text:', fullText);
+                              
+                              return fullText;
+                            })()}
+                          </div>
+                        </div>
+                        {note.updatedAt !== note.createdAt && (
+                          <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            <span>
+                              Updated {new Date(note.updatedAt).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <FileText className="w-10 h-10 text-muted-foreground/50 mb-2" />
+                    <p className="text-xs text-muted-foreground">No notes available for this contact</p>
+                  </div>
               )}
+              </div>
 
               {/* Metadata */}
               <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
