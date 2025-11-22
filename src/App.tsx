@@ -16,6 +16,7 @@ const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Contacts = lazy(() => import("./pages/Contacts"));
 const AddContact = lazy(() => import("./pages/AddContact"));
+const EditContact = lazy(() => import("./pages/EditContact"));
 const NewContact = lazy(() => import("./pages/NewContact"));
 const ContactDetails = lazy(() => import("./pages/ContactDetails"));
 const ActivityLogs = lazy(() => import("./pages/ActivityLogs"));
@@ -87,7 +88,7 @@ const AppContent = () => {
           path="/contacts/:id/edit"
           element={
             <ProtectedRoute requiredPermission="edit_contact">
-              <AddContact />
+              <EditContact />
             </ProtectedRoute>
           }
         />

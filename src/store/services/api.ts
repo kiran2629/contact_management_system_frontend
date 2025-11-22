@@ -26,7 +26,8 @@ const baseQueryWithAuth = fetchBaseQuery({
       headers.set("Authorization", `Bearer ${token}`);
     }
 
-    // Set Content-Type header
+    // Set Content-Type header for JSON requests
+    // Note: For FormData, we'll handle it in the baseQuery wrapper
     headers.set("Content-Type", "application/json");
 
     return headers;
@@ -39,6 +40,86 @@ export const baseQuery: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
+  // Check if body is FormData and remove Content-Type header if so
+  const requestArgs = typeof args === 'string' ? { url: args } : args;
+  if (requestArgs.body instanceof FormData) {
+    // Create a modified args without Content-Type header
+    const modifiedArgs = typeof args === 'string' 
+      ? { url: args, headers: {} }
+      : { ...args, headers: { ...(args.headers || {}), 'Content-Type': undefined } };
+    
+    // Use a custom fetch that doesn't set Content-Type for FormData
+    const customBaseQuery = fetchBaseQuery({
+      baseUrl: API_BASE_URL,
+      credentials: "include",
+      prepareHeaders: (headers, { getState }) => {
+        const state = getState() as RootState;
+        const token = state.auth.token || localStorage.getItem("crm_token");
+        if (token) {
+          headers.set("Authorization", `Bearer ${token}`);
+        }
+        // Don't set Content-Type - let browser set it with boundary for FormData
+        return headers;
+      },
+    });
+    
+    let result = await customBaseQuery(modifiedArgs, api, extraOptions);
+    
+    // Handle token refresh if needed
+    const url = typeof modifiedArgs === "string" ? modifiedArgs : modifiedArgs.url;
+    const isRefreshRequest = url?.includes("/refresh-token");
+    const isLoginRequest = url?.includes("/login");
+    const isLogoutRequest = url?.includes("/logout");
+
+    if (
+      result.error &&
+      result.error.status === 401 &&
+      !isRefreshRequest &&
+      !isLoginRequest &&
+      !isLogoutRequest
+    ) {
+      const refreshToken = localStorage.getItem("crm_refresh_token");
+
+      if (refreshToken) {
+        const refreshResult = await customBaseQuery(
+          {
+            url: "/v1/api/auth/refresh-token",
+            method: "POST",
+            body: { refreshToken },
+          },
+          api,
+          extraOptions
+        );
+
+        if (refreshResult.data) {
+          const refreshData = refreshResult.data as {
+            success: boolean;
+            accessToken: string;
+            refreshToken: string;
+          };
+
+          store.dispatch(setToken(refreshData.accessToken));
+          store.dispatch(setRefreshToken(refreshData.refreshToken));
+
+          const retryResult = await customBaseQuery(modifiedArgs, api, extraOptions);
+          return retryResult;
+        } else {
+          store.dispatch(logout());
+          document.cookie =
+            "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+          document.cookie =
+            "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+          return result;
+        }
+      } else {
+        store.dispatch(logout());
+        return result;
+      }
+    }
+
+    return result;
+  }
+  
   let result = await baseQueryWithAuth(args, api, extraOptions);
 
   // Check if this is a refresh token request to avoid infinite loops

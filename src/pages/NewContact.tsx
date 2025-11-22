@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatePicker } from '@/components/form/DatePicker';
 import { ArrowLeft, Save, User, Mail, Phone, Building2, Tag, Calendar, Linkedin, FileText } from 'lucide-react';
-import { useCreateContactMutation } from '@/store/services/contactsApi';
+import { useCreateContactMutation, CreateContactInput } from '@/store/services/contactsApi';
 import { format } from 'date-fns';
 
 const validCategories = ["Public", "HR", "Employee", "Client", "Candidate", "Partner", "Vendor", "Other"];
@@ -124,18 +124,21 @@ const NewContact = () => {
     }
 
     try {
-      const result = await createContact({
+      // Transform data to match backend format
+      const payload: CreateContactInput = {
         name: formData.name.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
+        emails: [{ email: formData.email.trim(), type: 'work', is_primary: true }],
+        phones: [{ number: formData.phone.trim(), type: 'mobile', is_primary: true }],
         company: formData.company.trim(),
         categories: formData.categories.length > 0 ? formData.categories : ['Other'],
-        birthday: formData.birthday ? format(formData.birthday, 'yyyy-MM-dd') : '',
-        linkedinUrl: formData.linkedinUrl.trim(),
-        address: '', // Address can be added later if needed
+        social_links: {
+          linkedin: formData.linkedinUrl.trim() || undefined,
+        },
         notes: formData.notes.trim() || undefined,
         tags: [],
-      }).unwrap();
+      };
+
+      const result = await createContact(payload).unwrap();
 
       toast.success('Contact created successfully!');
       navigate(`/contacts/${result.id}`);
