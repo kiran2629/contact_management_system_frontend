@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect } from "@/components/form/MultiSelect";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   useGetContactsQuery,
   useGetContactByIdQuery,
@@ -31,6 +32,7 @@ import {
   ArrowLeft,
   ExternalLink,
   Filter,
+  User,
 } from "lucide-react";
 
 // All available categories
@@ -53,9 +55,9 @@ const Contacts = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(id || null);
 
-  const { data: contacts = [], isLoading } = useGetContactsQuery();
+  const { data: contacts = [], isLoading, error } = useGetContactsQuery();
   const { data: selectedContact } = useGetContactByIdQuery(
-    Number(selectedId || 0),
+    selectedId || '',
     {
       skip: !selectedId,
     }
@@ -64,8 +66,12 @@ const Contacts = () => {
     useDeleteContactMutation();
 
   const filteredContacts = useMemo(() => {
+    // If user is Admin, show all contacts (backend already filters for non-Admins)
+    const isAdmin = user?.role === "Admin";
+    
     return contacts.filter((contact) => {
-      const hasAllowedCategory = contact.categories.some((cat) =>
+      // Admin can see all contacts, others need category permission check
+      const hasAllowedCategory = isAdmin || contact.categories.some((cat) =>
         hasCategory(cat)
       );
       const matchesSearch =
@@ -80,13 +86,13 @@ const Contacts = () => {
 
       return hasAllowedCategory && matchesSearch && matchesCategory;
     });
-  }, [contacts, searchQuery, selectedCategories, hasCategory]);
+  }, [contacts, searchQuery, selectedCategories, hasCategory, user?.role]);
 
   const handleDelete = async () => {
     if (!selectedContact || !selectedId) return;
 
     try {
-      await deleteContactMutation(Number(selectedId)).unwrap();
+      await deleteContactMutation(String(selectedId)).unwrap();
       toast.success("Contact deleted successfully");
       setSelectedId(null);
     } catch (error: any) {
@@ -109,8 +115,8 @@ const Contacts = () => {
           {/* LEFT: Contacts List */}
           <div
             className={`${selectedId ? "hidden md:flex" : "flex"} ${
-              selectedId ? "md:w-2/5 lg:w-1/3" : "w-full"
-            } border-r border-border/20 flex-col transition-all duration-300`}
+              selectedId ? "md:w-1/2" : "w-full"
+            } border-r border-border/20 flex-col transition-all duration-300 overflow-hidden`}
           >
             {/* Header */}
             <div className="p-4 border-b border-border/10 bg-gradient-to-br from-primary/3 to-transparent">
@@ -123,7 +129,7 @@ const Contacts = () => {
                     {filteredContacts.length} total
                   </p>
                 </div>
-                {canAccess("create_contact") && (
+                {canAccess("contact", "create") && (
                   <Link to="/contacts/new">
                     <Button
                       size="sm"
@@ -148,64 +154,107 @@ const Contacts = () => {
               </div>
             </div>
 
-            {/* List */}
+            {/* Cards Grid */}
             <div className="flex-1 overflow-y-auto">
               {isLoading ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
                 </div>
-              ) : (
-                <div className="p-2">
+              ) : filteredContacts.length > 0 ? (
+                <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredContacts.map((contact, index) => (
-                    <motion.button
+                    <motion.div
                       key={contact.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.02 }}
-                      whileHover={{ x: 2 }}
-                      onClick={() => setSelectedId(String(contact.id))}
-                      className={`w-full p-3 mb-1 rounded-lg transition-all text-left ${
-                        selectedId === contact.id
-                          ? "bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/30"
-                          : "hover:bg-muted/30 border border-transparent"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      whileHover={{ y: -4, scale: 1.02 }}
+                      className={`relative rounded-xl border-2 p-4 transition-all cursor-pointer ${
+                        selectedId === String(contact.id)
+                          ? "border-primary bg-gradient-to-br from-primary/10 to-secondary/10 shadow-lg"
+                          : "border-border/30 bg-card hover:border-primary/50 hover:shadow-md"
                       }`}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30 flex items-center justify-center font-bold shrink-0">
-                          {contact.name.charAt(0)}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold truncate text-sm">
-                            {contact.name}
-                          </h3>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {contact.company}
-                          </p>
-                          <div className="flex gap-1 mt-1">
-                            {contact.categories.slice(0, 2).map((cat) => (
-                              <Badge
-                                key={cat}
-                                variant="secondary"
-                                className="text-[10px] px-1.5 py-0 h-4"
-                              >
-                                {cat}
-                              </Badge>
-                            ))}
+                      {/* Card Content */}
+                      <div className="flex flex-col gap-3">
+                        {/* Avatar & Name */}
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-12 h-12 border-2 border-primary/30 shrink-0">
+                            {contact.profile_photo ? (
+                              <AvatarImage 
+                                src={contact.profile_photo.startsWith('http') 
+                                  ? contact.profile_photo 
+                                  : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${contact.profile_photo}`} 
+                                alt={contact.name}
+                                className="object-cover"
+                              />
+                            ) : null}
+                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-lg font-bold">
+                              {contact.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-base truncate">
+                              {contact.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {contact.company}
+                            </p>
                           </div>
                         </div>
-                      </div>
-                    </motion.button>
-                  ))}
 
-                  {filteredContacts.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-64">
-                      <Sparkles className="w-12 h-12 text-muted-foreground/50 mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        No contacts found
-                      </p>
-                    </div>
-                  )}
+                        {/* Email & Phone */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Mail className="w-3 h-3" />
+                            <span className="truncate">{contact.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Phone className="w-3 h-3" />
+                            <span>{contact.phone}</span>
+                          </div>
+                        </div>
+
+                        {/* Categories */}
+                        <div className="flex flex-wrap gap-1">
+                          {contact.categories.slice(0, 3).map((cat) => (
+                            <Badge
+                              key={cat}
+                              variant="secondary"
+                              className="text-[10px] px-2 py-0.5 h-5"
+                            >
+                              {cat}
+                            </Badge>
+                          ))}
+                          {contact.categories.length > 3 && (
+                            <Badge variant="outline" className="text-[10px] px-2 py-0.5 h-5">
+                              +{contact.categories.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* View Button */}
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedId(String(contact.id));
+                          }}
+                          className="w-full mt-2 bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90"
+                        >
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          View
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-64">
+                  <Sparkles className="w-12 h-12 text-muted-foreground/50 mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    No contacts found
+                  </p>
                 </div>
               )}
             </div>
@@ -221,39 +270,39 @@ const Contacts = () => {
                 exit={{ opacity: 0, x: 50 }}
                 className={`${
                   selectedId ? "flex" : "hidden"
-                } md:flex md:w-3/5 lg:w-2/3 flex-col`}
+                } md:flex md:w-1/2 flex-col`}
               >
                 {/* Header */}
-                <div className="p-4 border-b border-border/10 bg-gradient-to-br from-secondary/3 to-transparent">
-                  <div className="flex items-start justify-between mb-4">
+                <div className="p-3 border-b border-border/10 bg-gradient-to-br from-secondary/3 to-transparent">
+                  <div className="flex items-start justify-between mb-2">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setSelectedId(null)}
-                      className="md:hidden"
+                      className="md:hidden h-7"
                     >
-                      <ArrowLeft className="w-4 h-4 mr-1" />
+                      <ArrowLeft className="w-3 h-3 mr-1" />
                       Back
                     </Button>
 
                     <div className="flex-1" />
 
-                    <div className="flex gap-2">
-                      {canAccess("edit_contact") && (
+                    <div className="flex gap-1.5">
+                      {canAccess("contact", "update") && (
                         <Link to={`/contacts/${selectedId}/edit`}>
-                          <Button variant="outline" size="sm" className="h-8">
+                          <Button variant="outline" size="sm" className="h-7 px-2">
                             <Edit className="w-3 h-3 mr-1" />
                             Edit
                           </Button>
                         </Link>
                       )}
-                      {canAccess("delete_contact") && (
+                      {canAccess("contact", "delete") && (
                         <Button
                           variant="destructive"
                           size="sm"
                           onClick={handleDelete}
                           disabled={isDeleting}
-                          className="h-8"
+                          className="h-7 px-2"
                         >
                           <Trash className="w-3 h-3 mr-1" />
                           Delete
@@ -263,33 +312,33 @@ const Contacts = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => setSelectedId(null)}
-                        className="hidden md:flex h-8"
+                        className="hidden md:flex h-7 w-7 p-0"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
 
                   {/* Avatar & Name */}
-                  <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 border-2 border-primary/30 flex items-center justify-center">
-                      <span className="text-3xl font-black text-gradient-primary">
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30 flex items-center justify-center shrink-0">
+                      <span className="text-xl font-bold text-primary">
                         {selectedContact.name.charAt(0)}
                       </span>
                     </div>
 
-                    <div className="flex-1">
-                      <h2 className="text-2xl font-black text-gradient-shine mb-1">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-lg font-bold text-foreground mb-0.5 truncate">
                         {selectedContact.name}
                       </h2>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {selectedContact.position} at {selectedContact.company}
+                      <p className="text-xs text-muted-foreground mb-1.5 truncate">
+                        {selectedContact.position ? `${selectedContact.position} at ` : ''}{selectedContact.company}
                       </p>
                       <div className="flex flex-wrap gap-1">
                         {selectedContact.categories.map((cat) => (
                           <Badge
                             key={cat}
-                            className="text-xs px-2 py-0.5 bg-primary/10 text-primary border border-primary/30"
+                            className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border border-primary/30"
                           >
                             {cat}
                           </Badge>
@@ -300,20 +349,20 @@ const Contacts = () => {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4">
-                  <div className="grid md:grid-cols-2 gap-3 max-w-4xl">
+                <div className="flex-1 overflow-y-auto p-3">
+                  <div className="grid md:grid-cols-2 gap-2 max-w-4xl">
                     <a
                       href={`mailto:${selectedContact.email}`}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-border/20 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                      className="flex items-center gap-2 p-2 rounded-md border border-border/20 hover:border-primary/30 hover:bg-primary/5 transition-all"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Mail className="w-5 h-5 text-primary" />
+                      <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                        <Mail className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">
                           Email
                         </p>
-                        <p className="font-semibold text-sm truncate">
+                        <p className="font-medium text-xs truncate">
                           {selectedContact.email}
                         </p>
                       </div>
@@ -321,42 +370,42 @@ const Contacts = () => {
 
                     <a
                       href={`tel:${selectedContact.phone}`}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-border/20 hover:border-secondary/30 hover:bg-secondary/5 transition-all"
+                      className="flex items-center gap-2 p-2 rounded-md border border-border/20 hover:border-secondary/30 hover:bg-secondary/5 transition-all"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
-                        <Phone className="w-5 h-5 text-secondary" />
+                      <div className="w-8 h-8 rounded-md bg-secondary/10 flex items-center justify-center shrink-0">
+                        <Phone className="w-4 h-4 text-secondary" />
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">
                           Phone
                         </p>
-                        <p className="font-semibold text-sm">
+                        <p className="font-medium text-xs truncate">
                           {selectedContact.phone}
                         </p>
                       </div>
                     </a>
 
-                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border/20">
-                      <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                        <Building2 className="w-5 h-5 text-accent" />
+                    <div className="flex items-center gap-2 p-2 rounded-md border border-border/20">
+                      <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center shrink-0">
+                        <Building2 className="w-4 h-4 text-accent" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">
                           Company
                         </p>
-                        <p className="font-semibold text-sm truncate">
+                        <p className="font-medium text-xs truncate">
                           {selectedContact.company}
                         </p>
                       </div>
                     </div>
 
                     {selectedContact.address && (
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-border/20">
-                        <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
-                          <MapPin className="w-5 h-5 text-purple-500" />
+                      <div className="flex items-center gap-2 p-2 rounded-md border border-border/20">
+                        <div className="w-8 h-8 rounded-md bg-purple-500/10 flex items-center justify-center shrink-0">
+                          <MapPin className="w-4 h-4 text-purple-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">
                             Address
                           </p>
                           <p className="font-medium text-xs truncate">
@@ -371,37 +420,37 @@ const Contacts = () => {
                         href={selectedContact.linkedinUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-3 rounded-lg border border-border/20 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all group"
+                        className="flex items-center gap-2 p-2 rounded-md border border-border/20 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all group"
                       >
-                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
-                          <Linkedin className="w-5 h-5 text-blue-500" />
+                        <div className="w-8 h-8 rounded-md bg-blue-500/10 flex items-center justify-center shrink-0">
+                          <Linkedin className="w-4 h-4 text-blue-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">
                             LinkedIn
                           </p>
                           <p className="font-medium text-xs text-blue-500 truncate">
                             {selectedContact.linkedinUrl}
                           </p>
                         </div>
-                        <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                        <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
                       </a>
                     )}
 
                     {selectedContact.birthday && (
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-border/20">
-                        <div className="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center shrink-0">
-                          <Calendar className="w-5 h-5 text-pink-500" />
+                      <div className="flex items-center gap-2 p-2 rounded-md border border-border/20">
+                        <div className="w-8 h-8 rounded-md bg-pink-500/10 flex items-center justify-center shrink-0">
+                          <Calendar className="w-4 h-4 text-pink-500" />
                         </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">
                             Birthday
                           </p>
-                          <p className="font-medium text-sm">
+                          <p className="font-medium text-xs truncate">
                             {new Date(
                               selectedContact.birthday
                             ).toLocaleDateString("en-US", {
-                              month: "long",
+                              month: "short",
                               day: "numeric",
                               year: "numeric",
                             })}
@@ -414,15 +463,15 @@ const Contacts = () => {
               </motion.div>
             ) : (
               !selectedId && (
-                <div className="hidden md:flex md:w-3/5 lg:w-2/3 items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mx-auto mb-4">
-                      <Sparkles className="w-10 h-10 text-primary" />
+                <div className="hidden md:flex md:w-1/2 items-center justify-center p-8">
+                  <div className="text-center max-w-xs">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3">
+                      <User className="w-6 h-6 text-primary/60" />
                     </div>
-                    <h3 className="text-xl font-bold text-muted-foreground mb-1">
+                    <h3 className="text-sm font-semibold text-foreground mb-1">
                       Select a contact
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Choose from the list to view details
                     </p>
                   </div>

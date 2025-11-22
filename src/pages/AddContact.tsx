@@ -148,9 +148,9 @@ const AddContact = () => {
         phone: existingContact.phone,
         company: existingContact.company,
         categories: existingContact.categories,
-        birthday: parseISO(existingContact.birthday),
-        linkedinUrl: existingContact.linkedinUrl,
-        address: existingContact.address,
+        birthday: existingContact.birthday ? parseISO(existingContact.birthday) : undefined,
+        linkedinUrl: existingContact.linkedinUrl || "",
+        address: existingContact.address || "",
         tags: existingContact.tags || [],
         notes: existingContact.notes || "",
       });
@@ -159,24 +159,39 @@ const AddContact = () => {
 
   const onSubmit = async (data: AddContactForm) => {
     try {
-      // Format birthday as string (YYYY-MM-DD)
+      // Transform data to match backend format
       const formattedData: CreateContactInput = {
         name: data.name,
-        email: data.email,
-        phone: data.phone,
+        emails: [{ email: data.email, type: "work", is_primary: true }],
+        phones: [{ number: data.phone, type: "mobile", is_primary: true }],
         company: data.company,
         categories: data.categories,
-        birthday: format(data.birthday, "yyyy-MM-dd"),
-        linkedinUrl: data.linkedinUrl,
-        address: data.address,
         tags: data.tags || [],
         notes: data.notes || "",
+        social_links: {
+          linkedin: data.linkedinUrl || undefined,
+        },
       };
+
+      // Add address if provided
+      if (data.address) {
+        // Parse address string into components (simple parsing)
+        const addressParts = data.address.split(",").map(part => part.trim());
+        formattedData.addresses = [{
+          type: "work",
+          street: addressParts[0] || "",
+          city: addressParts[1] || "",
+          state: addressParts[2] || "",
+          postal_code: addressParts[3] || "",
+          country: "USA",
+          is_primary: true,
+        }];
+      }
 
       if (isEditMode && id) {
         // Update existing contact
         const result = await updateContactMutation({
-          id: Number(id),
+          id: String(id),
           data: formattedData,
         }).unwrap();
 
@@ -200,8 +215,10 @@ const AddContact = () => {
 
       navigate("/contacts");
     } catch (error: any) {
+      console.error("Contact operation error:", error);
       toast.error(
         error?.data?.message ||
+          error?.data?.error ||
           `Failed to ${
             isEditMode ? "update" : "create"
           } contact. Please try again.`

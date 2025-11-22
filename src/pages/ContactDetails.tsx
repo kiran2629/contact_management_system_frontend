@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -7,8 +7,10 @@ import { RootState } from "@/store/store";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
   useGetContactByIdQuery,
+  useGetContactsQuery,
   useDeleteContactMutation,
 } from "@/store/services/contactsApi";
+import { Input } from "@/components/ui/input";
 import { LayoutRouter } from "@/components/layout/LayoutRouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,30 +43,59 @@ import {
   Clock,
   Sparkles,
   FileText,
+  User,
+  Search,
+  Plus,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const ContactDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { canAccess } = usePermissions();
+  const { canAccess, hasCategory } = usePermissions();
   const [deleteContactMutation, { isLoading: isDeleting }] =
     useDeleteContactMutation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch contact from API
+  // Fetch all contacts for left sidebar
+  const { data: allContacts = [], isLoading: isLoadingContacts } = useGetContactsQuery();
+
+  // Fetch selected contact from API
   const {
     data: contact,
     isLoading,
     error,
-  } = useGetContactByIdQuery(Number(id || 0), {
+  } = useGetContactByIdQuery(id || '', {
     skip: !id,
   });
+
+  // Get user from Redux to check if Admin
+  const { user } = useSelector((state: RootState) => state.auth);
+  
+  // Filter contacts based on search and permissions
+  const filteredContacts = useMemo(() => {
+    const isAdmin = user?.role === "Admin";
+    
+    return allContacts.filter((c) => {
+      // Admin can see all contacts (backend already filters for non-Admins)
+      const hasAllowedCategory = isAdmin || c.categories.some((cat) =>
+        hasCategory(cat)
+      );
+      const matchesSearch =
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.email.toLowerCase().includes(searchQuery.toLowerCase());
+
+      return hasAllowedCategory && matchesSearch;
+    });
+  }, [allContacts, searchQuery, hasCategory, user?.role]);
 
   const handleDelete = async () => {
     if (!contact || !id) return;
 
     try {
-      await deleteContactMutation(Number(id)).unwrap();
+      await deleteContactMutation(String(id)).unwrap();
       toast.success("Contact deleted successfully");
       navigate("/contacts");
     } catch (error: any) {
@@ -130,67 +161,172 @@ const ContactDetails = () => {
 
   return (
     <LayoutRouter>
-      <div className="space-y-6 w-full">
-        {/* 🎯 Header Actions */}
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
+      <div className="h-[calc(100vh-140px)] w-full">
+        <div className="border border-border/20 rounded-lg overflow-hidden h-full flex flex-col md:flex-row bg-card">
+          {/* LEFT: Contacts List */}
+          <div className={`${id ? "hidden md:flex" : "flex"} ${id ? "md:w-1/2" : "w-full"} border-r border-border/20 flex-col transition-all duration-300`}>
+            {/* Header */}
+            <div className="p-3 md:p-4 border-b border-border/10 bg-gradient-to-br from-primary/3 to-transparent">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-3">
+                <div>
+                  <h1 className="text-lg md:text-xl font-semibold text-foreground">
+                    Contacts
+                  </h1>
+                  <p className="text-xs text-muted-foreground">
+                    {filteredContacts.length} total
+                  </p>
+                </div>
+                {canAccess("contact", "create") && (
+                  <Link to="/contacts/new">
+                    <Button
+                      size="sm"
+                      className="rounded-md bg-gradient-to-br from-primary to-secondary text-white text-xs"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add
+                    </Button>
+                  </Link>
+                )}
+              </div>
+
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  className="pl-7 md:pl-9 h-8 md:h-9 bg-background/50 border-border/50 text-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto">
+              {isLoadingContacts ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+                </div>
+              ) : (
+                <div className="p-2">
+                  <AnimatePresence>
+                    {filteredContacts.map((contactItem, index) => (
+                      <motion.button
+                        key={contactItem.id}
+                        initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center justify-between"
-        >
-          <motion.div whileHover={{ x: -4 }} whileTap={{ scale: 0.95 }}>
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ delay: index * 0.03, duration: 0.2 }}
+                        whileHover={{ x: 2 }}
+                        onClick={() => navigate(`/contacts/${contactItem.id}`)}
+                        className={`w-full p-2 md:p-3 mb-1 rounded-lg transition-all text-left ${
+                          id === String(contactItem.id)
+                            ? "bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/30"
+                            : "hover:bg-muted/30 border border-transparent"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 md:gap-3">
+                          <Avatar className="h-10 w-10 md:h-12 md:w-12 border border-primary/30 shrink-0">
+                            {contactItem.profile_photo ? (
+                              <AvatarImage 
+                                src={contactItem.profile_photo.startsWith('http') 
+                                  ? contactItem.profile_photo 
+                                  : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${contactItem.profile_photo}`} 
+                                alt={contactItem.name}
+                                className="object-cover"
+                              />
+                            ) : null}
+                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-sm md:text-base font-semibold text-primary">
+                              {contactItem.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-sm truncate">
+                              {contactItem.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {contactItem.company}
+                            </p>
+                            <div className="flex gap-1 mt-1">
+                              {contactItem.categories.slice(0, 2).map((cat) => (
+                                <Badge
+                                  key={cat}
+                                  variant="secondary"
+                                  className="text-[10px] px-1.5 py-0 h-4"
+                                >
+                                  {cat}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.button>
+                    ))}
+                  </AnimatePresence>
+
+                  {filteredContacts.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-64">
+                      <Sparkles className="w-8 h-8 text-muted-foreground/50 mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        No contacts found
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT: Contact Details */}
+          <div className={`${id ? "flex" : "hidden md:flex"} md:flex md:w-1/2 flex-col`}>
+            {contact ? (
+              <div className="flex flex-col h-full">
+                    {/* 🎯 Header Actions */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-2.5 md:p-3 border-b border-border/20 bg-gradient-to-br from-secondary/3 to-transparent">
             <Button
               variant="ghost"
               onClick={() => navigate("/contacts")}
-              className="glass-card border-2 border-border/30 hover:border-primary transition-all rounded-xl px-6 py-6 font-semibold"
+                    className="border border-border/30 hover:border-primary transition-all rounded-md px-4 py-2 text-sm font-medium"
             >
-              <ArrowLeft className="mr-2 h-5 w-5" />
-              Back to Contacts
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">Back to Contacts</span>
+                    <span className="sm:hidden">Back</span>
             </Button>
-          </motion.div>
 
-          {canAccess("edit_contact") && (
-            <div className="flex gap-3">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
+                  {canAccess("contact", "update") && (
+                    <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  size="icon"
+                        size="sm"
                   onClick={handleEdit}
-                  className="glass-card w-12 h-12 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 transition-all rounded-xl"
+                        className="border border-primary/30 hover:border-primary hover:bg-primary/10 transition-all rounded-md"
                 >
-                  <Edit className="h-5 w-5 text-primary" />
+                        <Edit className="h-4 w-4 mr-1 md:mr-2" />
+                        <span className="hidden md:inline">Edit</span>
                 </Button>
-              </motion.div>
 
-              {canAccess("delete_contact") && (
+                      {canAccess("contact", "delete") && (
                 <>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
                     <Button
                       variant="destructive"
-                      size="icon"
+                            size="sm"
                       onClick={() => setShowDeleteDialog(true)}
-                      className="w-12 h-12 border-2 border-destructive/30 hover:border-destructive transition-all shadow-lg hover:shadow-xl rounded-xl"
+                            className="border border-destructive/30 hover:border-destructive transition-all rounded-md"
                     >
-                      <Trash className="h-5 w-5" />
+                            <Trash className="h-4 w-4" />
                     </Button>
-                  </motion.div>
 
                   <AlertDialog
                     open={showDeleteDialog}
                     onOpenChange={setShowDeleteDialog}
                   >
-                    <AlertDialogContent className="glass-card border-2">
+                            <AlertDialogContent className="border-2">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="text-2xl">
+                                <AlertDialogTitle className="text-lg">
                           Are you absolutely sure?
                         </AlertDialogTitle>
-                        <AlertDialogDescription className="text-base">
+                                <AlertDialogDescription className="text-sm">
                           This action cannot be undone. This will permanently
                           delete the contact
                           <strong className="text-foreground">
@@ -203,14 +339,14 @@ const ContactDetails = () => {
                       <AlertDialogFooter>
                         <AlertDialogCancel
                           disabled={isDeleting}
-                          className="rounded-xl"
+                                  className="rounded-md"
                         >
                           Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={handleDelete}
                           disabled={isDeleting}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md"
                         >
                           {isDeleting ? "Deleting..." : "Delete Contact"}
                         </AlertDialogAction>
@@ -221,296 +357,232 @@ const ContactDetails = () => {
               )}
             </div>
           )}
-        </motion.div>
+                </div>
 
-        {/* 🎨 Main Contact Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-          className="relative group"
-        >
-          {/* Animated glow */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 rounded-3xl blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10" />
+                    {/* 🎨 Main Contact Card */}
+                    <div className="flex-1 overflow-y-auto p-3 md:p-4">
+                      <Card className="border border-border/30 shadow-sm overflow-hidden rounded-lg">
+                        {/* Header */}
+                        <CardHeader className="border-b border-border/20 pb-3 pt-4">
 
-          <Card className="glass-card border-2 border-border/30 shadow-2xl overflow-hidden rounded-3xl">
-            {/* ✨ Premium Header */}
-            <CardHeader className="relative border-b-2 border-border/20 pb-8 pt-8">
-              {/* Background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
-              <div
-                className="absolute inset-0 animate-gradient bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-50"
-                style={{ backgroundSize: "200% 200%" }}
-              />
+                          <div className="relative flex flex-col md:flex-row items-start md:items-center gap-3">
+                            {/* Avatar */}
+                            <div className="relative">
+                              <Avatar className="h-12 w-12 md:h-14 md:w-14 border border-primary/30">
+                    {contact.profile_photo ? (
+                      <AvatarImage 
+                        src={contact.profile_photo.startsWith('http') 
+                          ? contact.profile_photo 
+                          : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${contact.profile_photo}`} 
+                        alt={contact.name}
+                        className="object-cover"
+                      />
+                    ) : null}
+                                <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-lg md:text-xl font-bold text-primary">
+                                  {contact.name.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            </div>
 
-              <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6">
-                {/* Avatar */}
-                <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-                  whileHover={{ scale: 1.1, rotate: 360 }}
-                  className="relative group/avatar"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-3xl blur-2xl opacity-50 group-hover/avatar:opacity-100 transition-opacity animate-pulse-glow" />
-                  <div className="relative flex h-32 w-32 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/20 to-secondary/20 border-4 border-primary/30 shadow-2xl">
-                    <span className="text-6xl font-black text-gradient-shine">
-                      {contact.name.charAt(0)}
-                    </span>
-                  </div>
-                </motion.div>
-
-                {/* Info */}
-                <div className="flex-1">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <CardTitle className="text-4xl md:text-5xl font-black mb-4 text-gradient-shine">
-                      {contact.name}
-                    </CardTitle>
-                  </motion.div>
+                            {/* Info */}
+                            <div className="flex-1">
+                              <CardTitle className="text-lg md:text-xl font-semibold mb-1.5 text-foreground">
+                                {contact.name}
+                              </CardTitle>
 
                   {/* Categories */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="flex flex-wrap gap-3"
-                  >
-                    {contact.categories.map((category, idx) => (
-                      <motion.div
+                  <div className="flex flex-wrap gap-2">
+                    {contact.categories.map((category) => (
+                      <Badge 
                         key={category}
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ delay: 0.5 + idx * 0.1, type: "spring" }}
-                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        className="bg-primary/20 border border-primary/40 text-white font-medium px-3 py-1 text-sm rounded-md"
                       >
-                        <Badge className="bg-gradient-to-r from-primary/30 to-secondary/30 border-2 border-primary/40 text-primary font-bold px-4 py-2 text-base rounded-full shadow-lg hover:shadow-glow transition-all">
-                          <Tag className="mr-1.5 h-4 w-4" />
                           {category}
                         </Badge>
-                      </motion.div>
                     ))}
-                  </motion.div>
+                  </div>
 
                   {/* Tags if available */}
                   {contact.tags && contact.tags.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.6 }}
-                      className="flex flex-wrap gap-2 mt-4"
-                    >
-                      {contact.tags.map((tag, idx) => (
-                        <motion.div
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {contact.tags.map((tag) => (
+                        <Badge
                           key={tag}
-                          initial={{ opacity: 0, scale: 0 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.7 + idx * 0.05 }}
-                          whileHover={{ scale: 1.1 }}
-                        >
-                          <Badge
-                            variant="outline"
-                            className="rounded-full border-2"
+                          variant="outline"
+                          className="rounded-md border text-xs"
                           >
                             #{tag}
                           </Badge>
-                        </motion.div>
                       ))}
-                    </motion.div>
+                    </div>
                   )}
                 </div>
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-8 p-8">
-              {/* 📞 Contact Information Grid */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-              >
-                <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                  <Globe className="h-6 w-6 text-primary" />
-                  Contact Information
-                </h3>
+                        <CardContent className="space-y-4 p-4">
+                          {/* 📞 Contact Information Grid */}
+                          <div>
+                            <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
+                              <Globe className="h-3.5 w-3.5 text-primary" />
+                              Contact Information
+                            </h3>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  {/* Email */}
-                  <motion.a
-                    href={`mailto:${contact.email}`}
-                    whileHover={{ scale: 1.02, x: 4 }}
-                    className="flex items-center gap-4 p-5 rounded-2xl border-2 border-border/30 hover:border-primary/50 glass-card hover:shadow-lg transition-all duration-300 group/item"
-                  >
-                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 border-2 border-primary/30 group-hover/item:scale-110 transition-transform">
-                      <Mail className="h-6 w-6 text-primary" />
-                    </div>
+                            <div className="grid gap-2 md:grid-cols-2">
+                              {/* Email */}
+                              <a
+                                href={`mailto:${contact.email}`}
+                                className="flex items-center gap-2 p-2.5 rounded-md border border-border/30 hover:border-primary/50 bg-card hover:bg-primary/5 transition-colors group/item"
+                              >
+                                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 border border-primary/20 shrink-0">
+                                  <Mail className="h-3.5 w-3.5 text-primary" />
+                                </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                         Email
                       </p>
-                      <p className="font-bold text-lg group-hover/item:text-primary transition-colors truncate">
+                      <p className="font-medium text-sm text-foreground truncate group-hover/item:text-primary transition-colors">
                         {contact.email}
                       </p>
                     </div>
-                  </motion.a>
+                  </a>
 
-                  {/* Phone */}
-                  <motion.a
-                    href={`tel:${contact.phone}`}
-                    whileHover={{ scale: 1.02, x: 4 }}
-                    className="flex items-center gap-4 p-5 rounded-2xl border-2 border-border/30 hover:border-secondary/50 glass-card hover:shadow-lg transition-all duration-300 group/item"
-                  >
-                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-secondary/20 to-accent/20 border-2 border-secondary/30 group-hover/item:scale-110 transition-transform">
-                      <Phone className="h-6 w-6 text-secondary" />
-                    </div>
+                              {/* Phone */}
+                              <a
+                                href={`tel:${contact.phone}`}
+                                className="flex items-center gap-2 p-2.5 rounded-md border border-border/30 hover:border-secondary/50 bg-card hover:bg-secondary/5 transition-colors group/item"
+                              >
+                                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary/10 border border-secondary/20 shrink-0">
+                                  <Phone className="h-3.5 w-3.5 text-secondary" />
+                                </div>
                     <div className="flex-1">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                         Phone
                       </p>
-                      <p className="font-bold text-lg group-hover/item:text-secondary transition-colors">
+                      <p className="font-medium text-sm text-foreground group-hover/item:text-secondary transition-colors">
                         {contact.phone}
                       </p>
                     </div>
-                  </motion.a>
+                  </a>
 
-                  {/* Company */}
-                  <motion.div
-                    whileHover={{ scale: 1.02, x: 4 }}
-                    className="flex items-center gap-4 p-5 rounded-2xl border-2 border-border/30 hover:border-accent/50 glass-card hover:shadow-lg transition-all duration-300 group/item"
-                  >
-                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-accent/20 to-primary/20 border-2 border-accent/30 group-hover/item:scale-110 transition-transform">
-                      <Building2 className="h-6 w-6 text-accent" />
-                    </div>
+                              {/* Company */}
+                              <div className="flex items-center gap-2 p-2.5 rounded-md border border-border/30 bg-card">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent/10 border border-accent/20 shrink-0">
+                                  <Building2 className="h-3.5 w-3.5 text-accent" />
+                                </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                         Company
                       </p>
-                      <p className="font-bold text-lg group-hover/item:text-accent transition-colors truncate">
+                      <p className="font-medium text-sm text-foreground truncate">
                         {contact.company}
                       </p>
                     </div>
-                  </motion.div>
+                  </div>
 
                   {/* Position */}
                   {contact.position && (
-                    <motion.div
-                      whileHover={{ scale: 1.02, x: 4 }}
-                      className="flex items-center gap-4 p-5 rounded-2xl border-2 border-border/30 hover:border-primary/50 glass-card hover:shadow-lg transition-all duration-300 group/item"
-                    >
-                      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-primary/30 group-hover/item:scale-110 transition-transform">
-                        <Briefcase className="h-6 w-6 text-primary" />
+                    <div className="flex items-center gap-3 p-4 rounded-lg border border-border/30 bg-card">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
+                        <Briefcase className="h-4 w-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                           Position
                         </p>
-                        <p className="font-bold text-lg group-hover/item:text-primary transition-colors truncate">
+                        <p className="font-medium text-sm text-foreground truncate">
                           {contact.position}
                         </p>
                       </div>
-                    </motion.div>
+                    </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
 
-              <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
+                          <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
 
-              {/* 🌍 Additional Information */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-              >
-                <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                  <Sparkles className="h-6 w-6 text-secondary" />
-                  Additional Details
-                </h3>
+                          {/* 🌍 Additional Information */}
+                          <div>
+                            <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
+                              <Sparkles className="h-3.5 w-3.5 text-secondary" />
+                              Additional Details
+                            </h3>
 
-                <div className="space-y-4">
-                  {/* Address */}
-                  {contact.address && (
-                    <motion.div
-                      whileHover={{ x: 4 }}
-                      className="flex items-start gap-4 p-5 rounded-2xl glass-card border-2 border-border/20 hover:border-secondary/30 transition-all"
-                    >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
-                        <MapPin className="h-5 w-5 text-secondary" />
-                      </div>
+                            <div className="space-y-2">
+                              {/* Address */}
+                              {contact.address && (
+                                <div className="flex items-start gap-2 p-2.5 rounded-md border border-border/20 bg-card">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary/10 shrink-0">
+                                    <MapPin className="h-3.5 w-3.5 text-secondary" />
+                                  </div>
                       <div>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                           Address
                         </p>
-                        <p className="font-semibold text-lg">
+                        <p className="font-medium text-sm text-foreground">
                           {contact.address}
                         </p>
                       </div>
-                    </motion.div>
+                    </div>
                   )}
 
-                  {/* LinkedIn */}
-                  {contact.linkedinUrl && (
-                    <motion.a
-                      href={contact.linkedinUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      whileHover={{ x: 4 }}
-                      className="flex items-center gap-4 p-5 rounded-2xl glass-card border-2 border-border/20 hover:border-blue-500/50 transition-all group/link"
-                    >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 group-hover/link:bg-blue-500/20 transition-colors">
-                        <Linkedin className="h-5 w-5 text-blue-500" />
-                      </div>
+                              {/* LinkedIn */}
+                              {contact.linkedinUrl && (
+                                <a
+                                  href={contact.linkedinUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 p-2.5 rounded-md border border-border/20 hover:border-blue-500/50 bg-card hover:bg-blue-500/5 transition-colors group/link"
+                                >
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500/10 shrink-0">
+                                    <Linkedin className="h-3.5 w-3.5 text-blue-500" />
+                                  </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                           LinkedIn Profile
                         </p>
-                        <p className="font-semibold text-blue-500 group-hover/link:underline truncate">
+                        <p className="font-medium text-sm text-blue-500 group-hover/link:underline truncate">
                           {contact.linkedinUrl}
                         </p>
                       </div>
-                      <ExternalLink className="h-5 w-5 text-muted-foreground opacity-0 group-hover/link:opacity-100 transition-opacity" />
-                    </motion.a>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                    </a>
                   )}
 
-                  {/* Birthday */}
-                  {contact.birthday && (
-                    <motion.div
-                      whileHover={{ x: 4 }}
-                      className="flex items-center gap-4 p-5 rounded-2xl glass-card border-2 border-border/20 hover:border-accent/30 transition-all"
-                    >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10">
-                        <Calendar className="h-5 w-5 text-accent" />
-                      </div>
+                              {/* Birthday */}
+                              {contact.birthday && (
+                                <div className="flex items-center gap-2 p-2.5 rounded-md border border-border/20 bg-card">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent/10 shrink-0">
+                                    <Calendar className="h-3.5 w-3.5 text-accent" />
+                                  </div>
                       <div>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                           Birthday
                         </p>
-                        <p className="font-semibold text-lg">
+                        <p className="font-medium text-sm text-foreground">
                           {new Date(contact.birthday).toLocaleDateString(
                             "en-US",
                             { year: "numeric", month: "long", day: "numeric" }
                           )}
                         </p>
                       </div>
-                    </motion.div>
+                    </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
 
               {/* Notes Section */}
               {contact.notes && (
                 <>
                   <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
-                  <div className="p-4 rounded-xl border-2 border-border/30 bg-muted/20">
-                    <div className="flex items-center gap-2 mb-3">
-                      <FileText className="h-5 w-5 text-primary" />
+                  <div className="p-4 rounded-lg border border-border/30 bg-muted/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="h-4 w-4 text-primary" />
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Notes
                       </p>
                     </div>
-                    <p className="text-foreground whitespace-pre-wrap">
+                    <p className="text-sm text-foreground whitespace-pre-wrap">
                       {contact.notes}
                     </p>
                   </div>
@@ -521,16 +593,11 @@ const ContactDetails = () => {
               <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
 
               {/* 🕒 Metadata */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.8 }}
-                className="p-6 rounded-2xl glass-card border-2 border-border/20"
-              >
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <Clock className="h-5 w-5" />
-                  <span className="font-semibold">Created:</span>
-                  <span className="font-bold text-foreground">
+              <div className="p-4 rounded-lg border border-border/20 bg-card">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-xs font-medium">Created:</span>
+                  <span className="text-xs text-foreground">
                     {new Date(contact.created_at).toLocaleDateString("en-US", {
                       year: "numeric",
                       month: "long",
@@ -540,10 +607,28 @@ const ContactDetails = () => {
                     })}
                   </span>
                 </div>
-              </motion.div>
+              </div>
             </CardContent>
           </Card>
-        </motion.div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center p-8">
+                <div className="text-center max-w-xs">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3">
+                    <User className="w-6 h-6 text-primary/60" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-foreground mb-1">
+                    Select a contact
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Choose from the list to view details
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </LayoutRouter>
   );
