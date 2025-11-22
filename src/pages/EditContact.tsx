@@ -262,6 +262,13 @@ const EditContact = () => {
       if (formData.twitter.trim()) social_links.twitter = formData.twitter.trim();
       if (formData.website.trim()) social_links.website = formData.website.trim();
 
+      // Prepare notes - if it's a string, convert to array for backend
+      let notesArray: string[] = [];
+      if (formData.notes && formData.notes.trim()) {
+        // If notes is a string, create a new note
+        notesArray = [formData.notes.trim()];
+      }
+
       const payload: Partial<CreateContactInput> = {
         name: formData.name.trim(),
         emails,
@@ -269,7 +276,7 @@ const EditContact = () => {
         company: formData.company.trim(),
         categories: formData.categories.length > 0 ? formData.categories : ['Other'],
         tags: formData.tags,
-        notes: formData.notes.trim() || undefined,
+        notes: notesArray.length > 0 ? notesArray : undefined,
         status: formData.status,
         leadScore: formData.leadScore ? parseInt(formData.leadScore) : undefined,
         lastInteraction: formData.lastInteraction ? formData.lastInteraction.toISOString() : undefined,
