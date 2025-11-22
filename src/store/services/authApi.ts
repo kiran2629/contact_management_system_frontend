@@ -34,6 +34,20 @@ export interface UserResponse {
   };
 }
 
+// Helper function to parse permissions (can be string or object)
+const parsePermissions = (permissions: any): any => {
+  if (!permissions) return undefined;
+  if (typeof permissions === "string") {
+    try {
+      return JSON.parse(permissions);
+    } catch (e) {
+      console.error("Error parsing permissions:", e);
+      return undefined;
+    }
+  }
+  return permissions;
+};
+
 export interface SignedUserApiResponse {
   success: boolean;
   user: {
@@ -44,36 +58,39 @@ export interface SignedUserApiResponse {
     allowed_categories: string[];
     name?: string;
     avatar?: string;
+    profile_photo?: string | null;
     isActive?: boolean;
     createdAt?: string;
     updatedAt?: string;
     lastLoginAt?: string;
-    permissions?: {
-      contact?: {
-        create: boolean;
-        read: boolean;
-        update: boolean;
-        delete: boolean;
-      };
-      notes?: {
-        create: boolean;
-        read: boolean;
-        update: boolean;
-        delete: boolean;
-      };
-      tasks?: {
-        create: boolean;
-        read: boolean;
-        update: boolean;
-        delete: boolean;
-      };
-      crm_features?: {
-        view_birthdays: boolean;
-        view_statistics: boolean;
-        export_contacts: boolean;
-        import_contacts: boolean;
-      };
-    };
+    permissions?:
+      | string
+      | {
+          contact?: {
+            create: boolean;
+            read: boolean;
+            update: boolean;
+            delete: boolean;
+          };
+          notes?: {
+            create: boolean;
+            read: boolean;
+            update: boolean;
+            delete: boolean;
+          };
+          tasks?: {
+            create: boolean;
+            read: boolean;
+            update: boolean;
+            delete: boolean;
+          };
+          crm_features?: {
+            view_birthdays: boolean;
+            view_statistics: boolean;
+            export_contacts: boolean;
+            import_contacts: boolean;
+          };
+        };
   };
 }
 
@@ -85,6 +102,7 @@ export interface SignedUserResponse {
   allowed_categories: string[];
   name?: string;
   avatar?: string;
+  profile_photo?: string | null;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -150,7 +168,12 @@ export const authApi = createApi({
       transformResponse: (
         response: SignedUserApiResponse
       ): SignedUserResponse => {
-        return response.user;
+        // Parse permissions if it's a string
+        const user = response.user;
+        return {
+          ...user,
+          permissions: parsePermissions(user.permissions),
+        };
       },
       providesTags: ["Auth"],
     }),

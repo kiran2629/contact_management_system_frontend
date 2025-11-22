@@ -37,35 +37,20 @@ export const Header = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
   const { mode } = useSelector((state: RootState) => state.theme);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [forceUpdate, setForceUpdate] = useState(0);
   const [logoutMutation, { isLoading: isLoggingOut }] = useLogoutMutation();
 
-  // Get profile image from localStorage
-  const getProfileImage = () => {
-    if (!user?.id) return null;
-    return localStorage.getItem(`profile_image_${user.id}`) || null;
+  // Get profile photo URL from user state
+  const getProfilePhotoUrl = () => {
+    if (!user?.profile_photo) return null;
+    // If it's already a full URL (Cloudinary, etc.), return as is
+    if (user.profile_photo.startsWith("http")) return user.profile_photo;
+    // If it's a relative path, prepend API URL
+    if (user.profile_photo.startsWith("/"))
+      return `${import.meta.env.VITE_API_URL || "http://localhost:5000"}${
+        user.profile_photo
+      }`;
+    return user.profile_photo;
   };
-
-  // Load image on mount and when user changes
-  useEffect(() => {
-    const image = getProfileImage();
-    setProfileImage(image);
-  }, [user?.id, user?.username, forceUpdate]);
-
-  // Listen for profile updates (including username changes)
-  useEffect(() => {
-    const handleProfileUpdate = () => {
-      // Update profile image
-      const image = getProfileImage();
-      setProfileImage(image);
-      // Force component re-render to ensure username and image update immediately
-      setForceUpdate((prev) => prev + 1);
-    };
-    window.addEventListener("profileUpdated", handleProfileUpdate);
-    return () =>
-      window.removeEventListener("profileUpdated", handleProfileUpdate);
-  }, [user?.id]);
 
   const handleLogout = async () => {
     try {
@@ -139,8 +124,9 @@ export const Header = () => {
                   }}
                 >
                   <AvatarImage
-                    src={profileImage || undefined}
+                    src={getProfilePhotoUrl() || undefined}
                     alt={user?.username}
+                    className="object-cover"
                   />
                   <AvatarFallback
                     className="text-white font-bold"
@@ -173,8 +159,9 @@ export const Header = () => {
                     }}
                   >
                     <AvatarImage
-                      src={profileImage || undefined}
+                      src={getProfilePhotoUrl() || undefined}
                       alt={user?.username}
+                      className="object-cover"
                     />
                     <AvatarFallback
                       className="text-white font-bold text-lg"

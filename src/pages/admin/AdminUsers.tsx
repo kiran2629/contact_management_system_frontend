@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import { useForm, Controller } from "react-hook-form";
@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -246,6 +246,9 @@ const AdminUsers = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [createUserMutation, { isLoading: isCreating }] =
     useCreateUserMutation();
   const [updateUserMutation, { isLoading: isUpdating }] =
@@ -473,6 +476,7 @@ const AdminUsers = () => {
       const result = await updateUserMutation({
         id: selectedUser.id,
         data: updateData,
+        profileImageFile: profileImageFile,
       }).unwrap();
 
       // Also update Redux store for immediate UI update
@@ -483,7 +487,12 @@ const AdminUsers = () => {
       toast.success("User updated successfully!");
       setShowEditDialog(false);
       setSelectedUser(null);
+      setProfileImageFile(null);
+      setPreviewImage(null);
       editForm.reset();
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error: any) {
       toast.error(
         error?.data?.message || "Failed to update user. Please try again."
@@ -491,8 +500,58 @@ const AdminUsers = () => {
     }
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image file");
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+
+      // Store the File object for FormData upload
+      setProfileImageFile(file);
+      // Also create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setPreviewImage(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setPreviewImage(null);
+    setProfileImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const getProfilePhotoUrl = (profilePhoto: string | null | undefined) => {
+    if (!profilePhoto) return null;
+    if (profilePhoto.startsWith("http")) return profilePhoto;
+    if (profilePhoto.startsWith("/"))
+      return `${
+        import.meta.env.VITE_API_URL || "http://localhost:5000"
+      }${profilePhoto}`;
+    return profilePhoto;
+  };
+
   const handleEdit = (user: any) => {
     setSelectedUser(user);
+    setProfileImageFile(null);
+
+    // Set preview image from existing profile photo
+    const profilePhotoUrl = getProfilePhotoUrl(user.profile_photo);
+    setPreviewImage(profilePhotoUrl);
 
     // Ensure permissions are properly initialized with all required boolean fields
     const defaultPermissions = {
@@ -773,6 +832,16 @@ const AdminUsers = () => {
                       {/* Avatar */}
                       <div className="relative mb-4">
                         <Avatar className="h-20 w-20 border-4 border-background shadow-lg ring-2 ring-primary/20">
+                          {user.profile_photo && (
+                            <AvatarImage
+                              src={
+                                getProfilePhotoUrl(user.profile_photo) ||
+                                undefined
+                              }
+                              alt={user.name || user.username}
+                              className="object-cover"
+                            />
+                          )}
                           <AvatarFallback
                             className={`${getAvatarGradient(
                               user.role
@@ -1352,6 +1421,61 @@ const AdminUsers = () => {
                     )}
                   />
 
+                  {/* Profile Photo Upload */}
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Profile Photo</FormLabel>
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <Avatar className="h-20 w-20 border-2 border-border">
+                          {previewImage ? (
+                            <AvatarImage
+                              src={previewImage}
+                              alt="Profile preview"
+                              className="object-cover"
+                            />
+                          ) : null}
+                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-lg font-bold">
+                            {selectedUser?.name
+                              ? selectedUser.name.charAt(0).toUpperCase()
+                              : "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            {previewImage ? "Change Photo" : "Upload Photo"}
+                          </Button>
+                          {previewImage && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleRemoveImage}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          JPG, PNG or GIF. Max size 5MB
+                        </p>
+                      </div>
+                    </div>
+                  </FormItem>
+
                   {/* Allowed Categories */}
                   <FormField
                     control={editForm.control}
@@ -1634,7 +1758,12 @@ const AdminUsers = () => {
                     onClick={() => {
                       setShowEditDialog(false);
                       setSelectedUser(null);
+                      setProfileImageFile(null);
+                      setPreviewImage(null);
                       editForm.reset();
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = "";
+                      }
                     }}
                   >
                     Cancel
@@ -1722,6 +1851,17 @@ const AdminUsers = () => {
                   <div className="flex items-start gap-6">
                     <div className="relative">
                       <Avatar className="h-24 w-24 border-4 border-background shadow-lg ring-2 ring-primary/20">
+                        {userDetailData.profile_photo && (
+                          <AvatarImage
+                            src={
+                              getProfilePhotoUrl(
+                                userDetailData.profile_photo
+                              ) || undefined
+                            }
+                            alt={userDetailData.name || userDetailData.username}
+                            className="object-cover"
+                          />
+                        )}
                         <AvatarFallback
                           className={`${getAvatarGradient(
                             userDetailData.role

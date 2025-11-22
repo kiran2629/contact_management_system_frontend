@@ -100,6 +100,7 @@ const Login = () => {
           data.email.split("@")[0],
         email: decodedToken.email || data.email,
         avatar: "",
+        profile_photo: null,
         permissions: undefined as any,
       };
 
@@ -130,11 +131,24 @@ const Login = () => {
 
         if (signedUserResponse.ok) {
           const signedUserData = await signedUserResponse.json();
-          // API response structure: { success: true, user: { permissions: {...} } }
-          const permissions = signedUserData.user?.permissions;
-          if (permissions) {
-            userData.permissions = permissions;
-            // Update user with permissions
+          // API response structure: { success: true, user: { permissions: "..." or {...}, profile_photo: "..." } }
+          let permissions = signedUserData.user?.permissions;
+          const profile_photo = signedUserData.user?.profile_photo;
+
+          // Parse permissions if it's a string
+          if (permissions && typeof permissions === "string") {
+            try {
+              permissions = JSON.parse(permissions);
+            } catch (e) {
+              console.error("Error parsing permissions:", e);
+              permissions = undefined;
+            }
+          }
+
+          if (permissions || profile_photo) {
+            if (permissions) userData.permissions = permissions;
+            if (profile_photo) userData.profile_photo = profile_photo;
+            // Update user with permissions and profile photo
             dispatch(
               setCredentials({
                 user: userData,

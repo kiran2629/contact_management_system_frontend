@@ -28,8 +28,19 @@ import { toast } from "sonner";
 
 export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+
+  // Helper function to get profile photo URL
+  const getProfilePhotoUrl = () => {
+    if (!user?.profile_photo) return null;
+    if (user.profile_photo.startsWith("http")) return user.profile_photo;
+    if (user.profile_photo.startsWith("/"))
+      return `${import.meta.env.VITE_API_URL || "http://localhost:5000"}${
+        user.profile_photo
+      }`;
+    return user.profile_photo;
+  };
+  const dispatch = useDispatch();
   const { mode } = useSelector((state: RootState) => state.theme);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -136,7 +147,11 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
             }`}
           >
             <Avatar className="h-10 w-10 border-2 border-primary/30">
-              <AvatarImage src={user?.avatar} />
+              <AvatarImage
+                src={getProfilePhotoUrl() || undefined}
+                alt={user?.username}
+                className="object-cover"
+              />
               <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold">
                 {user?.username?.charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -250,7 +265,11 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
               <div className="p-4 border-t border-border/20">
                 <div className="flex items-center gap-3 mb-3">
                   <Avatar className="h-10 w-10 border-2 border-primary/30">
-                    <AvatarImage src={user?.avatar} />
+                    <AvatarImage
+                      src={getProfilePhotoUrl() || undefined}
+                      alt={user?.username}
+                      className="object-cover"
+                    />
                     <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold">
                       {user?.username?.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -336,7 +355,11 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
             </Button>
             <Link to="/profile" className="hidden md:block">
               <Avatar className="h-9 w-9 border-2 border-primary/30 cursor-pointer hover:scale-105 transition-transform">
-                <AvatarImage src={user?.avatar} />
+                <AvatarImage
+                  src={getProfilePhotoUrl() || undefined}
+                  alt={user?.username}
+                  className="object-cover"
+                />
                 <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold text-sm">
                   {user?.username?.charAt(0).toUpperCase()}
                 </AvatarFallback>

@@ -29,25 +29,54 @@ export const BottomBarLayout = ({
 }: {
   children: React.ReactNode;
 }) => {
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  // Helper function to get profile photo URL
+  const getProfilePhotoUrl = () => {
+    if (!user?.profile_photo) return null;
+    if (user.profile_photo.startsWith("http")) return user.profile_photo;
+    if (user.profile_photo.startsWith("/"))
+      return `${import.meta.env.VITE_API_URL || "http://localhost:5000"}${
+        user.profile_photo
+      }`;
+    return user.profile_photo;
+  };
   const location = useLocation();
   const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
   const { mode } = useSelector((state: RootState) => state.theme);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const mainNavItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", color: "from-blue-500 to-cyan-500" },
-    { icon: Users, label: "Contacts", path: "/contacts", color: "from-purple-500 to-pink-500" },
-    { icon: Activity, label: "Activity", path: "/activity-logs", color: "from-orange-500 to-yellow-500" },
-    { icon: Settings, label: "Settings", path: "/settings", color: "from-green-500 to-emerald-500" },
+    {
+      icon: LayoutDashboard,
+      label: "Dashboard",
+      path: "/dashboard",
+      color: "from-blue-500 to-cyan-500",
+    },
+    {
+      icon: Users,
+      label: "Contacts",
+      path: "/contacts",
+      color: "from-purple-500 to-pink-500",
+    },
+    {
+      icon: Activity,
+      label: "Activity",
+      path: "/activity-logs",
+      color: "from-orange-500 to-yellow-500",
+    },
+    {
+      icon: Settings,
+      label: "Settings",
+      path: "/settings",
+      color: "from-green-500 to-emerald-500",
+    },
   ];
 
   const moreItems = [
     { icon: UserCircle, label: "Profile", path: "/profile" },
     ...(user?.role === "Admin"
-      ? [
-          { icon: Shield, label: "Admin", path: "/admin/users" },
-        ]
+      ? [{ icon: Shield, label: "Admin", path: "/admin/users" }]
       : []),
   ];
 
@@ -169,7 +198,11 @@ export const BottomBarLayout = ({
                     <motion.div
                       whileHover={{ scale: 1.05, y: -3 }}
                       whileTap={{ scale: 0.95 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 17,
+                      }}
                       className="relative"
                     >
                       <div
@@ -195,7 +228,9 @@ export const BottomBarLayout = ({
                         >
                           <item.icon
                             className={`w-6 h-6 transition-all duration-300 ${
-                              active ? "text-white" : "text-muted-foreground group-hover:text-foreground"
+                              active
+                                ? "text-white"
+                                : "text-muted-foreground group-hover:text-foreground"
                             }`}
                           />
                         </motion.div>
@@ -207,7 +242,11 @@ export const BottomBarLayout = ({
                               initial={{ y: -10, opacity: 0, scale: 0 }}
                               animate={{ y: -12, opacity: 1, scale: 1 }}
                               exit={{ y: -10, opacity: 0, scale: 0 }}
-                              transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 25,
+                              }}
                               className="absolute -top-2 left-1/2 -translate-x-1/2"
                             >
                               <motion.div
@@ -259,7 +298,9 @@ export const BottomBarLayout = ({
                         ease: "easeInOut",
                       }}
                       className={`text-xs font-bold transition-all duration-300 ${
-                        active ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                        active
+                          ? "text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground"
                       }`}
                     >
                       {item.label}
@@ -302,7 +343,9 @@ export const BottomBarLayout = ({
                   >
                     <MoreHorizontal
                       className={`w-6 h-6 transition-all duration-300 ${
-                        menuOpen ? "text-white" : "text-muted-foreground group-hover:text-foreground"
+                        menuOpen
+                          ? "text-white"
+                          : "text-muted-foreground group-hover:text-foreground"
                       }`}
                     />
                   </motion.div>
@@ -326,7 +369,9 @@ export const BottomBarLayout = ({
 
                 <span
                   className={`text-xs font-bold transition-all duration-300 ${
-                    menuOpen ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                    menuOpen
+                      ? "text-foreground"
+                      : "text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
                   More
@@ -395,9 +440,16 @@ export const BottomBarLayout = ({
 
                   <div className="relative flex items-center gap-4">
                     <Link to="/profile" onClick={() => setMenuOpen(false)}>
-                      <motion.div whileHover={{ scale: 1.05, rotate: 5 }} whileTap={{ scale: 0.95 }}>
+                      <motion.div
+                        whileHover={{ scale: 1.05, rotate: 5 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
                         <Avatar className="h-16 w-16 border-2 border-primary/30 shadow-xl ring-4 ring-primary/10">
-                          <AvatarImage src={user?.avatar} />
+                          <AvatarImage
+                            src={getProfilePhotoUrl() || undefined}
+                            alt={user?.username}
+                            className="object-cover"
+                          />
                           <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold text-xl">
                             {user?.username?.charAt(0).toUpperCase()}
                           </AvatarFallback>
@@ -406,7 +458,11 @@ export const BottomBarLayout = ({
                     </Link>
 
                     <div className="flex-1">
-                      <motion.p initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="font-bold text-lg">
+                      <motion.p
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="font-bold text-lg"
+                      >
                         {user?.name || user?.username}
                       </motion.p>
                       <motion.div
@@ -418,18 +474,27 @@ export const BottomBarLayout = ({
                         <Badge className="bg-gradient-to-r from-primary to-secondary text-white border-0 shadow-lg">
                           {user?.role}
                         </Badge>
-                        <p className="text-sm text-muted-foreground">{user?.email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {user?.email}
+                        </p>
                       </motion.div>
                     </div>
 
-                    <motion.div whileHover={{ scale: 1.1, rotate: 180 }} whileTap={{ scale: 0.9 }}>
+                    <motion.div
+                      whileHover={{ scale: 1.1, rotate: 180 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={handleThemeToggle}
                         className="shrink-0 rounded-2xl hover:bg-muted/50 h-12 w-12"
                       >
-                        {mode === "light" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                        {mode === "light" ? (
+                          <Moon className="w-5 h-5" />
+                        ) : (
+                          <Sun className="w-5 h-5" />
+                        )}
                       </Button>
                     </motion.div>
                   </div>
@@ -444,20 +509,32 @@ export const BottomBarLayout = ({
                         key={item.path}
                         initial={{ opacity: 0, x: -30 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.08, type: "spring", stiffness: 200 }}
+                        transition={{
+                          delay: index * 0.08,
+                          type: "spring",
+                          stiffness: 200,
+                        }}
                       >
                         <Link to={item.path} onClick={() => setMenuOpen(false)}>
                           <motion.div
                             whileHover={{ scale: 1.02, x: 5 }}
                             whileTap={{ scale: 0.98 }}
                             className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${
-                              active ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg" : "hover:bg-muted/50"
+                              active
+                                ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg"
+                                : "hover:bg-muted/50"
                             }`}
                           >
-                            <div className={`p-3 rounded-xl ${active ? "bg-white/20" : "bg-primary/10"}`}>
+                            <div
+                              className={`p-3 rounded-xl ${
+                                active ? "bg-white/20" : "bg-primary/10"
+                              }`}
+                            >
                               <item.icon className="w-5 h-5" />
                             </div>
-                            <span className="font-semibold text-base">{item.label}</span>
+                            <span className="font-semibold text-base">
+                              {item.label}
+                            </span>
                           </motion.div>
                         </Link>
                       </motion.div>

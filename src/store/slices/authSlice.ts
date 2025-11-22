@@ -8,6 +8,7 @@ interface User {
   name: string;
   email: string;
   avatar: string;
+  profile_photo?: string | null;
   permissions?: {
     contact?: {
       create: boolean;

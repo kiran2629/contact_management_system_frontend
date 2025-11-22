@@ -24,11 +24,13 @@ VITE_API_URL=http://localhost:5000
 ```
 
 **For Production:**
-The `.env.production` file is configured with:
+Create a `.env.production` file in the root directory with:
 
 ```env
 # Production Environment Variables
 # This file is used when building for production
+# Frontend Production URL: https://crm-b7wf.onrender.com/
+# Backend API URL: Update this with your actual backend API URL
 VITE_API_URL=https://crmnodeapi.onrender.com
 ```
 
@@ -37,6 +39,7 @@ VITE_API_URL=https://crmnodeapi.onrender.com
 - `.env` is used for local development (`npm run dev`)
 - `.env.production` is automatically used when building for production (`npm run build`)
 - You can also create `.env.local` for local overrides (this file is gitignored)
+- **Important**: `VITE_API_URL` should point to your backend API server, not the frontend URL
 
 ### Step 3: Start Development Server
 

@@ -16,6 +16,17 @@ export const PageHeader = () => {
   const location = useLocation();
   const { user } = useSelector((state: RootState) => state.auth);
 
+  // Helper function to get profile photo URL
+  const getProfilePhotoUrl = () => {
+    if (!user?.profile_photo) return null;
+    if (user.profile_photo.startsWith("http")) return user.profile_photo;
+    if (user.profile_photo.startsWith("/"))
+      return `${import.meta.env.VITE_API_URL || "http://localhost:5000"}${
+        user.profile_photo
+      }`;
+    return user.profile_photo;
+  };
+
   const pageInfo: Record<
     string,
     { title: string; description: string; icon: any }
@@ -75,7 +86,11 @@ export const PageHeader = () => {
         className="flex-shrink-0 hover:opacity-80 transition-opacity"
       >
         <Avatar className="h-12 w-12 border-2 border-primary/30 shadow-lg">
-          <AvatarImage src={user?.avatar} />
+          <AvatarImage
+            src={getProfilePhotoUrl() || undefined}
+            alt={user?.username}
+            className="object-cover"
+          />
           <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-primary to-secondary text-white">
             {user?.username?.charAt(0).toUpperCase()}
           </AvatarFallback>

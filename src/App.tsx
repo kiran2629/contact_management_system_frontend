@@ -42,22 +42,24 @@ const PermissionLoader = () => {
     refetchOnMountOrArgChange: true,
   });
 
-  // Update user with permissions when fetched
+  // Update user with permissions and profile_photo when fetched
   useEffect(() => {
-    if (signedUserData && user && token && signedUserData.permissions) {
+    if (signedUserData && user && token) {
       // The transformResponse already extracts user from { success: true, user: {...} }
-      // So signedUserData is the user object with permissions directly on it
+      // So signedUserData is the user object with permissions and profile_photo directly on it
       const permissions = signedUserData.permissions;
+      const profile_photo = signedUserData.profile_photo;
 
-      // Only update if permissions exist and are different from current permissions
-      // Compare permissions to avoid unnecessary updates
+      // Check if permissions or profile_photo changed
       const currentPermissionsStr = JSON.stringify(user.permissions || {});
-      const newPermissionsStr = JSON.stringify(permissions);
+      const newPermissionsStr = JSON.stringify(permissions || {});
+      const profilePhotoChanged = user.profile_photo !== profile_photo;
 
-      if (currentPermissionsStr !== newPermissionsStr) {
+      if (currentPermissionsStr !== newPermissionsStr || profilePhotoChanged) {
         const updatedUser = {
           ...user,
-          permissions,
+          ...(permissions && { permissions }),
+          ...(profile_photo !== undefined && { profile_photo }),
         };
         dispatch(
           setCredentials({

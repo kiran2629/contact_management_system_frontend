@@ -28,6 +28,17 @@ export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
   const [isNavVisible, setIsNavVisible] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
 
+  // Helper function to get profile photo URL
+  const getProfilePhotoUrl = () => {
+    if (!user?.profile_photo) return null;
+    if (user.profile_photo.startsWith("http")) return user.profile_photo;
+    if (user.profile_photo.startsWith("/"))
+      return `${import.meta.env.VITE_API_URL || "http://localhost:5000"}${
+        user.profile_photo
+      }`;
+    return user.profile_photo;
+  };
+
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
     { icon: Users, label: "Contacts", path: "/contacts" },
@@ -96,7 +107,11 @@ export const MinimalLayout = ({ children }: { children: React.ReactNode }) => {
               <div className="p-6 border-b border-border/20">
                 <div className="flex items-center gap-3 mb-4">
                   <Avatar className="h-12 w-12 border-2 border-primary/30">
-                    <AvatarImage src={user?.avatar} />
+                    <AvatarImage
+                      src={getProfilePhotoUrl() || undefined}
+                      alt={user?.username}
+                      className="object-cover"
+                    />
                     <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold">
                       {user?.username?.charAt(0).toUpperCase()}
                     </AvatarFallback>
