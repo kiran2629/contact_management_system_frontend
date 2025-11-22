@@ -121,10 +121,10 @@ const Login = () => {
           }/v1/api/auth/getSignedUser`,
           {
             method: "GET",
-            headers: {
-              Authorization: `Bearer ${result.accessToken}`,
-              "Content-Type": "application/json",
-            },
+            // headers: {
+            //   Authorization: `Bearer ${result.accessToken}`,
+            //   "Content-Type": "application/json",
+            // },
             credentials: "include",
           }
         );
