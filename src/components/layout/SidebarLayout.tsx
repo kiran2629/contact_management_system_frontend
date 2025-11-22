@@ -333,26 +333,6 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
             <Badge className="bg-primary/10 text-primary border-primary/30 hidden md:flex">
               {user?.role}
             </Badge>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleThemeToggle}
-              className="rounded-lg h-9 w-9 hidden md:flex"
-            >
-              {mode === "light" ? (
-                <Moon className="h-4 w-4" />
-              ) : (
-                <Sun className="h-4 w-4" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="rounded-lg h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10 hidden md:flex"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
             <Link to="/profile" className="hidden md:block">
               <Avatar className="h-9 w-9 border-2 border-primary/30 cursor-pointer hover:scale-105 transition-transform">
                 <AvatarImage

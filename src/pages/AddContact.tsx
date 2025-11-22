@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import * as z from "zod";
 import { RootState } from "@/store/store";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   useCreateContactMutation,
   useUpdateContactMutation,
@@ -66,45 +67,146 @@ const CATEGORIES = [
   "Other",
 ];
 
-// Zod validation schema
+// Zod validation schema with comprehensive field validations
 const addContactSchema = z.object({
-  name: z.string().min(3, "Name must be at least 3 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits"),
-  company: z.string().min(2, "Company must be at least 2 characters"),
-  categories: z.array(z.string()).min(1, "Please select at least one category"),
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name must be less than 100 characters")
+    .regex(
+      /^[a-zA-Z\s'-]+$/,
+      "Name can only contain letters, spaces, hyphens, and apostrophes"
+    )
+    .refine((val) => val.trim().length >= 2, {
+      message: "Name cannot be only whitespace",
+    }),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address")
+    .max(255, "Email must be less than 255 characters")
+    .toLowerCase()
+    .refine(
+      (email) => {
+        // Additional email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+      },
+      { message: "Invalid email format" }
+    ),
+  phone: z
+    .string()
+    .min(1, "Phone is required")
+    .refine(
+      (phone) => {
+        // Remove all non-digit characters for validation
+        const digitsOnly = phone.replace(/\D/g, "");
+        // Allow 10-15 digits (international format)
+        return digitsOnly.length >= 10 && digitsOnly.length <= 15;
+      },
+      { message: "Phone must be between 10 and 15 digits" }
+    )
+    .refine(
+      (phone) => {
+        // Check for valid phone format (allows +, spaces, dashes, parentheses)
+        const phoneRegex =
+          /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+        return phoneRegex.test(phone.replace(/\s/g, ""));
+      },
+      { message: "Please enter a valid phone number" }
+    ),
+  company: z
+    .string()
+    .min(1, "Company is required")
+    .min(2, "Company must be at least 2 characters")
+    .max(200, "Company must be less than 200 characters")
+    .refine((val) => val.trim().length >= 2, {
+      message: "Company cannot be only whitespace",
+    }),
+  categories: z
+    .array(z.string())
+    .min(1, "Please select at least one category")
+    .refine((categories) => categories.length > 0, {
+      message: "At least one category is required",
+    }),
   birthday: z
     .date({
-      required_error: "Birthday is required",
       invalid_type_error: "Please select a valid date",
     })
+    .optional()
     .refine(
       (date) => {
+        if (!date) return true; // Optional field
         const today = new Date();
         const age = today.getFullYear() - date.getFullYear();
         const monthDiff = today.getMonth() - date.getMonth();
-        if (
-          monthDiff < 0 ||
-          (monthDiff === 0 && today.getDate() < date.getDate())
-        ) {
-          return age - 1 >= 14;
-        }
-        return age >= 14;
+        const actualAge =
+          monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())
+            ? age - 1
+            : age;
+        return actualAge >= 14 && actualAge <= 120;
       },
-      { message: "User must be at least 14 years old" }
+      { message: "Birthday must represent an age between 14 and 120 years" }
     )
-    .refine((date) => date <= new Date(), {
-      message: "Birthday must be a past date",
-    }),
+    .refine(
+      (date) => {
+        if (!date) return true;
+        return date <= new Date();
+      },
+      { message: "Birthday must be a past date" }
+    ),
   linkedinUrl: z
     .string()
-    .url("Invalid URL")
-    .refine((url) => url.startsWith("https://www.linkedin.com/"), {
-      message: "LinkedIn URL must start with https://www.linkedin.com/",
-    }),
-  address: z.string().min(5, "Address must be at least 5 characters"),
+    .optional()
+    .refine(
+      (url) => {
+        if (!url || url.trim() === "") return true; // Optional field
+        try {
+          const urlObj = new URL(url);
+          return (
+            urlObj.protocol === "https:" &&
+            (urlObj.hostname === "www.linkedin.com" ||
+              urlObj.hostname === "linkedin.com")
+          );
+        } catch {
+          return false;
+        }
+      },
+      {
+        message:
+          "LinkedIn URL must be a valid URL starting with https://www.linkedin.com/ or https://linkedin.com/",
+      }
+    ),
+  address: z
+    .string()
+    .optional()
+    .refine(
+      (address) => {
+        if (!address || address.trim() === "") return true; // Optional field
+        return address.trim().length >= 5;
+      },
+      { message: "Address must be at least 5 characters if provided" }
+    )
+    .refine(
+      (address) => {
+        if (!address || address.trim() === "") return true;
+        return address.length <= 500;
+      },
+      { message: "Address must be less than 500 characters" }
+    ),
   tags: z.array(z.string()).optional().default([]),
-  notes: z.string().optional().default(""),
+  notes: z
+    .string()
+    .optional()
+    .default("")
+    .refine(
+      (notes) => {
+        if (!notes) return true;
+        return notes.length <= 5000;
+      },
+      { message: "Notes must be less than 5000 characters" }
+    ),
 });
 
 type AddContactForm = z.infer<typeof addContactSchema>;
@@ -115,6 +217,7 @@ const AddContact = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const { contacts } = useSelector((state: RootState) => state.contacts);
+  const { canAccess, canCreate, canViewBirthdays } = usePermissions();
   const [createContact, { isLoading: isCreating }] = useCreateContactMutation();
   const [updateContactMutation, { isLoading: isUpdating }] =
     useUpdateContactMutation();
@@ -125,6 +228,8 @@ const AddContact = () => {
 
   const form = useForm<AddContactForm>({
     resolver: zodResolver(addContactSchema),
+    mode: "onBlur", // Validate on blur for inline errors
+    reValidateMode: "onBlur", // Re-validate on blur after first submission
     defaultValues: {
       name: "",
       email: "",
@@ -148,7 +253,9 @@ const AddContact = () => {
         phone: existingContact.phone,
         company: existingContact.company,
         categories: existingContact.categories,
-        birthday: existingContact.birthday ? parseISO(existingContact.birthday) : undefined,
+        birthday: existingContact.birthday
+          ? parseISO(existingContact.birthday)
+          : undefined,
         linkedinUrl: existingContact.linkedinUrl || "",
         address: existingContact.address || "",
         tags: existingContact.tags || [],
@@ -158,6 +265,23 @@ const AddContact = () => {
   }, [existingContact, form]);
 
   const onSubmit = async (data: AddContactForm) => {
+    // Check permissions before submission
+    if (isEditMode) {
+      // Check update permission for edit mode
+      if (!canAccess("contact", "update") && user?.role !== "Admin") {
+        toast.error("You don't have permission to update contacts");
+        navigate("/contacts");
+        return;
+      }
+    } else {
+      // Check create permission for new contact
+      if (!canCreate("contact") && user?.role !== "Admin") {
+        toast.error("You don't have permission to create contacts");
+        navigate("/contacts");
+        return;
+      }
+    }
+
     try {
       // Transform data to match backend format
       const formattedData: CreateContactInput = {
@@ -176,16 +300,18 @@ const AddContact = () => {
       // Add address if provided
       if (data.address) {
         // Parse address string into components (simple parsing)
-        const addressParts = data.address.split(",").map(part => part.trim());
-        formattedData.addresses = [{
-          type: "work",
-          street: addressParts[0] || "",
-          city: addressParts[1] || "",
-          state: addressParts[2] || "",
-          postal_code: addressParts[3] || "",
-          country: "USA",
-          is_primary: true,
-        }];
+        const addressParts = data.address.split(",").map((part) => part.trim());
+        formattedData.addresses = [
+          {
+            type: "work",
+            street: addressParts[0] || "",
+            city: addressParts[1] || "",
+            state: addressParts[2] || "",
+            postal_code: addressParts[3] || "",
+            country: "USA",
+            is_primary: true,
+          },
+        ];
       }
 
       if (isEditMode && id) {
@@ -442,35 +568,37 @@ const AddContact = () => {
                     />
 
                     {/* Birthday */}
-                    <FormField
-                      control={form.control}
-                      name="birthday"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2 font-bold text-base">
-                            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                              <Calendar className="h-4 w-4 text-accent" />
-                            </div>
-                            Birthday <span className="text-destructive">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Controller
-                              control={form.control}
-                              name="birthday"
-                              render={({ field: { value, onChange } }) => (
-                                <DatePicker
-                                  date={value}
-                                  onDateChange={onChange}
-                                  placeholder="Select birthday"
-                                  maxDate={new Date()}
-                                />
-                              )}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {canViewBirthdays() && (
+                      <FormField
+                        control={form.control}
+                        name="birthday"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2 font-bold text-base">
+                              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                                <Calendar className="h-4 w-4 text-accent" />
+                              </div>
+                              Birthday
+                            </FormLabel>
+                            <FormControl>
+                              <Controller
+                                control={form.control}
+                                name="birthday"
+                                render={({ field: { value, onChange } }) => (
+                                  <DatePicker
+                                    date={value}
+                                    onDateChange={onChange}
+                                    placeholder="Select birthday"
+                                    maxDate={new Date()}
+                                  />
+                                )}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
                     {/* LinkedIn URL */}
                     <FormField

@@ -19,9 +19,15 @@ import {
   Mail,
   Phone,
   Loader2,
+  PieChart,
+  Tag,
 } from "lucide-react";
-import { useGetDashboardQuery } from "@/store/services/dashboardApi";
+import {
+  useGetDashboardQuery,
+  useGetCategoryPercentageQuery,
+} from "@/store/services/dashboardApi";
 import { usePermissions } from "@/hooks/usePermissions";
+import { Progress } from "@/components/ui/progress";
 
 const Dashboard = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -32,6 +38,8 @@ const Dashboard = () => {
 
   // Fetch dashboard data from API
   const { data: dashboardData, isLoading, isError } = useGetDashboardQuery();
+  const { data: categoryData, isLoading: isLoadingCategories } =
+    useGetCategoryPercentageQuery();
 
   // Fallback calculations from Redux state (used if API data is not available)
   const allowedContacts = contacts.filter((contact) =>
@@ -150,6 +158,79 @@ const Dashboard = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* 📊 Category Statistics */}
+        {categoryData && categoryData.status === "success" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <Card className="border border-border/20 rounded-xl overflow-hidden">
+              <CardHeader className="border-b border-border/10 pb-4">
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <PieChart className="h-5 w-5" />
+                  Category Distribution
+                  <Badge variant="secondary" className="ml-auto">
+                    {categoryData.total_contacts} contacts
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                {isLoadingCategories ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {[...categoryData.categories]
+                      .sort((a, b) => b.percentage - a.percentage)
+                      .slice(0, 10)
+                      .map((category, index) => (
+                        <motion.div
+                          key={`${category.category}-${index}`}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Tag className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium capitalize">
+                                {category.category}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-muted-foreground">
+                                {category.count} contacts
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs font-semibold min-w-[60px] text-right"
+                              >
+                                {category.percentage.toFixed(1)}%
+                              </Badge>
+                            </div>
+                          </div>
+                          <Progress
+                            value={category.percentage}
+                            className="h-2"
+                          />
+                        </motion.div>
+                      ))}
+                    {categoryData.categories.length > 10 && (
+                      <p className="text-xs text-muted-foreground text-center pt-2">
+                        Showing top 10 categories out of{" "}
+                        {categoryData.categories.length}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* 📋 Recent Contacts */}
         <motion.div
