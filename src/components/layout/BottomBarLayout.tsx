@@ -23,12 +23,14 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/ai-features/localization/useTranslation";
 
 export const BottomBarLayout = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
+  const { t } = useTranslation();
   const { user } = useSelector((state: RootState) => state.auth);
 
   // Helper function to get profile photo URL
@@ -49,34 +51,34 @@ export const BottomBarLayout = ({
   const mainNavItems = [
     {
       icon: LayoutDashboard,
-      label: "Dashboard",
+      label: t("dashboard"),
       path: "/dashboard",
       color: "from-blue-500 to-cyan-500",
     },
     {
       icon: Users,
-      label: "Contacts",
+      label: t("contacts"),
       path: "/contacts",
       color: "from-purple-500 to-pink-500",
     },
     {
       icon: Activity,
-      label: "Activity",
+      label: t("activity_logs"),
       path: "/activity-logs",
       color: "from-orange-500 to-yellow-500",
     },
     {
       icon: Settings,
-      label: "Settings",
+      label: t("settings"),
       path: "/settings",
       color: "from-green-500 to-emerald-500",
     },
   ];
 
   const moreItems = [
-    { icon: UserCircle, label: "Profile", path: "/profile" },
+    { icon: UserCircle, label: t("profile"), path: "/profile" },
     ...(user?.role === "Admin"
-      ? [{ icon: Shield, label: "Admin", path: "/admin/users" }]
+      ? [{ icon: Shield, label: t("admin_users"), path: "/admin/users" }]
       : []),
   ];
 

@@ -20,8 +20,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/ai-features/localization/useTranslation";
 
 export const FloatingNav = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -29,18 +31,18 @@ export const FloatingNav = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-    { icon: Users, label: "Contacts", path: "/contacts" },
-    { icon: Activity, label: "Activity", path: "/activity-logs" },
-    { icon: Settings, label: "Settings", path: "/settings" },
+    { icon: LayoutDashboard, label: t("dashboard"), path: "/dashboard" },
+    { icon: Users, label: t("contacts"), path: "/contacts" },
+    { icon: Activity, label: t("activity_logs"), path: "/activity-logs" },
+    { icon: Settings, label: t("settings"), path: "/settings" },
     ...(user?.role === "Admin"
-      ? [{ icon: Users, label: "User Management", path: "/admin/users" }]
+      ? [{ icon: Users, label: t("admin_users"), path: "/admin/users" }]
       : []),
   ];
 
   const handleLogout = () => {
     dispatch(logout());
-    toast.success("Logged out successfully");
+    toast.success(t("logout"));
   };
 
   const handleThemeToggle = () => {

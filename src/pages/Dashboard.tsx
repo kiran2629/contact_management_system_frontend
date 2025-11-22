@@ -28,8 +28,10 @@ import {
 } from "@/store/services/dashboardApi";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Progress } from "@/components/ui/progress";
+import { useTranslation } from "@/ai-features/localization/useTranslation";
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const { user } = useSelector((state: RootState) => state.auth);
   const { contacts } = useSelector((state: RootState) => state.contacts);
   const { users } = useSelector((state: RootState) => state.users);
@@ -68,7 +70,7 @@ const Dashboard = () => {
 
   const stats = [
     {
-      title: "Total Contacts",
+      title: t("total_contacts"),
       value: totalContacts,
       icon: ContactRound,
       change: "+12%",
@@ -77,7 +79,7 @@ const Dashboard = () => {
       bgColor: "from-primary/10 to-blue-600/10",
     },
     {
-      title: user?.role === "Admin" ? "Total Users" : "My Activities",
+      title: user?.role === "Admin" ? t("total_users") : t("recent_activities"),
       value: totalUsers,
       icon: Users,
       change: "+5%",
@@ -86,7 +88,7 @@ const Dashboard = () => {
       bgColor: "from-secondary/10 to-teal-600/10",
     },
     {
-      title: "Recent Activities",
+      title: t("recent_activities"),
       value: recentActivities,
       icon: Activity,
       change: "+8%",
@@ -95,7 +97,7 @@ const Dashboard = () => {
       bgColor: "from-accent/10 to-yellow-600/10",
     },
     {
-      title: "This Week",
+      title: t("this_week"),
       value: weekActivities,
       icon: TrendingUp,
       change: "+24%",
@@ -170,9 +172,9 @@ const Dashboard = () => {
               <CardHeader className="border-b border-border/10 pb-4">
                 <CardTitle className="text-xl font-bold flex items-center gap-2">
                   <PieChart className="h-5 w-5" />
-                  Category Distribution
+                  {t("category")}
                   <Badge variant="secondary" className="ml-auto">
-                    {categoryData.total_contacts} contacts
+                    {categoryData.total_contacts} {t("contacts")}
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -203,7 +205,7 @@ const Dashboard = () => {
                             </div>
                             <div className="flex items-center gap-3">
                               <span className="text-xs text-muted-foreground">
-                                {category.count} contacts
+                                {category.count} {t("contacts")}
                               </span>
                               <Badge
                                 variant="secondary"
@@ -243,7 +245,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-bold flex items-center gap-2">
                   <ContactRound className="h-5 w-5" />
-                  Recent Contacts
+                  {t("recent_contacts")}
                 </CardTitle>
                 {canView("contact") && (
                   <Link to="/contacts">
@@ -251,7 +253,7 @@ const Dashboard = () => {
                       size="sm"
                       className="rounded-lg bg-gradient-to-r from-primary to-secondary text-white"
                     >
-                      View All
+                      {t("view_all")}
                       <ArrowRight className="ml-1 h-3 w-3" />
                     </Button>
                   </Link>

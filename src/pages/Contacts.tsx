@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTranslation } from "@/ai-features/localization/useTranslation";
 import {
   useGetContactsQuery,
   useGetContactByIdQuery,
@@ -66,6 +67,7 @@ const ALL_CATEGORIES = [
 ];
 
 const Contacts = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -617,7 +619,7 @@ const Contacts = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
                 <Input
-                  placeholder="Search contacts (name, company, email, phone...)"
+                  placeholder={t("search_contacts")}
                   className="pl-9 pr-10 h-9 bg-background/50 border-border/50 focus:ring-2 focus:ring-primary/20"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -777,9 +779,9 @@ const Contacts = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center h-64">
                   <Sparkles className="w-12 h-12 text-muted-foreground/50 mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    No contacts found
-                  </p>
+            <p className="text-sm text-muted-foreground">
+              {t("no_contacts_found")}
+            </p>
                 </div>
               )}
             </div>

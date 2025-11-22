@@ -50,8 +50,10 @@ import {
   Star,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTranslation } from "@/ai-features/localization/useTranslation";
 
 const ContactDetails = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { canAccess, hasCategory, canViewBirthdays } = usePermissions();
@@ -248,7 +250,7 @@ const ContactDetails = () => {
             </div>
           </div>
           <p className="text-muted-foreground mt-6 text-lg font-medium">
-            Loading contact details...
+            {t("loading_contact_details")}
           </p>
         </div>
       </LayoutRouter>
@@ -263,16 +265,16 @@ const ContactDetails = () => {
             <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-6">
               <ExternalLink className="h-10 w-10 text-destructive" />
             </div>
-            <h3 className="text-2xl font-bold mb-3">Contact not found</h3>
+            <h3 className="text-2xl font-bold mb-3">{t("contact_not_found")}</h3>
             <p className="text-muted-foreground mb-6">
-              The contact you're looking for doesn't exist or has been removed.
+              {t("contact_not_found_message")}
             </p>
             <Button
               onClick={() => navigate("/contacts")}
               className="rounded-xl"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Contacts
+              {t("back_to_contacts")}
             </Button>
           </div>
         </div>
@@ -295,10 +297,10 @@ const ContactDetails = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-3">
                 <div>
                   <h1 className="text-lg md:text-xl font-semibold text-foreground">
-                    Contacts
+                    {t("contacts")}
                   </h1>
                   <p className="text-xs text-muted-foreground">
-                    {filteredContacts.length} total
+                    {filteredContacts.length} {t("total")}
                   </p>
                 </div>
                 {canAccess("contact", "create") && (
@@ -308,7 +310,7 @@ const ContactDetails = () => {
                       className="rounded-md bg-gradient-to-br from-primary to-secondary text-white text-xs"
                     >
                       <Plus className="w-3 h-3 mr-1" />
-                      Add
+                      {t("add")}
                     </Button>
                   </Link>
                 )}
@@ -318,7 +320,7 @@ const ContactDetails = () => {
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search..."
+                  placeholder={t("search")}
                   className="pl-7 md:pl-9 h-8 md:h-9 bg-background/50 border-border/50 text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -399,7 +401,7 @@ const ContactDetails = () => {
                     <div className="flex flex-col items-center justify-center h-64">
                       <Sparkles className="w-8 h-8 text-muted-foreground/50 mb-2" />
                       <p className="text-sm text-muted-foreground">
-                        No contacts found
+                        {t("no_contacts_found")}
                       </p>
                     </div>
                   )}
@@ -424,8 +426,8 @@ const ContactDetails = () => {
                     className="border border-border/30 hover:border-primary transition-all rounded-md px-4 py-2 text-sm font-medium"
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">Back to Contacts</span>
-                    <span className="sm:hidden">Back</span>
+                    <span className="hidden sm:inline">{t("back_to_contacts")}</span>
+                    <span className="sm:hidden">{t("back")}</span>
                   </Button>
 
                   {canAccess("contact", "update") && (
@@ -437,7 +439,7 @@ const ContactDetails = () => {
                         className="border border-primary/30 hover:border-primary hover:bg-primary/10 transition-all rounded-md"
                       >
                         <Edit className="h-4 w-4 mr-1 md:mr-2" />
-                        <span className="hidden md:inline">Edit</span>
+                        <span className="hidden md:inline">{t("edit")}</span>
                       </Button>
 
                       {canAccess("contact", "delete") && (
@@ -458,16 +460,15 @@ const ContactDetails = () => {
                             <AlertDialogContent className="border-2">
                               <AlertDialogHeader>
                                 <AlertDialogTitle className="text-lg">
-                                  Are you absolutely sure?
+                                  {t("are_you_sure")}
                                 </AlertDialogTitle>
                                 <AlertDialogDescription className="text-sm">
-                                  This action cannot be undone. This will
-                                  permanently delete the contact
+                                  {t("delete_contact_confirmation")}
                                   <strong className="text-foreground">
                                     {" "}
                                     {contact?.name}
                                   </strong>{" "}
-                                  and all associated data.
+                                  {t("and_all_data")}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -475,7 +476,7 @@ const ContactDetails = () => {
                                   disabled={isDeleting}
                                   className="rounded-md"
                                 >
-                                  Cancel
+                                  {t("cancel")}
                                 </AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={handleDelete}
@@ -483,8 +484,8 @@ const ContactDetails = () => {
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md"
                                 >
                                   {isDeleting
-                                    ? "Deleting..."
-                                    : "Delete Contact"}
+                                    ? t("deleting")
+                                    : t("delete_contact")}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -573,7 +574,7 @@ const ContactDetails = () => {
                       <div>
                         <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
                           <Globe className="h-3.5 w-3.5 text-primary" />
-                          Contact Information
+                          {t("contact_information")}
                         </h3>
 
                         <div className="grid gap-2 md:grid-cols-2">
@@ -588,7 +589,7 @@ const ContactDetails = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                  Email
+                                  {t("email")}
                                 </p>
                                 <p className="font-medium text-sm text-foreground truncate group-hover/item:text-primary transition-colors">
                                   {contactData.email}
@@ -608,7 +609,7 @@ const ContactDetails = () => {
                               </div>
                               <div className="flex-1">
                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                  Phone
+                                  {t("phone")}
                                 </p>
                                 <p className="font-medium text-sm text-foreground group-hover/item:text-secondary transition-colors">
                                   {contactData.phone}
@@ -625,7 +626,7 @@ const ContactDetails = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                  Company
+                                  {t("company")}
                                 </p>
                                 <p className="font-medium text-sm text-foreground truncate">
                                   {contactData.company}
@@ -642,7 +643,7 @@ const ContactDetails = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                  Position
+                                  {t("position")}
                                 </p>
                                 <p className="font-medium text-sm text-foreground truncate">
                                   {contactData.position}
@@ -659,7 +660,7 @@ const ContactDetails = () => {
                       <div>
                         <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
                           <Sparkles className="h-3.5 w-3.5 text-secondary" />
-                          Additional Details
+                          {t("additional_details")}
                         </h3>
 
                         <div className="space-y-2">
@@ -671,7 +672,7 @@ const ContactDetails = () => {
                               </div>
                               <div>
                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                  Address
+                                  {t("address")}
                                 </p>
                                 <p className="font-medium text-sm text-foreground">
                                   {contactData.address}
@@ -693,7 +694,7 @@ const ContactDetails = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                  LinkedIn Profile
+                                  {t("linkedin_profile")}
                                 </p>
                                 <p className="font-medium text-sm text-blue-500 group-hover/link:underline truncate">
                                   {contactData.linkedinUrl}
@@ -711,7 +712,7 @@ const ContactDetails = () => {
                               </div>
                               <div>
                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                  Birthday
+                                  {t("birthday")}
                                 </p>
                                 <p className="font-medium text-sm text-foreground">
                                   {new Date(
@@ -746,7 +747,7 @@ const ContactDetails = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                  Twitter
+                                  {t("twitter")}
                                 </p>
                                 <p className="font-medium text-sm text-blue-400 group-hover/link:underline truncate">
                                   {contactData.twitter}
@@ -773,7 +774,7 @@ const ContactDetails = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                  Website
+                                  {t("website")}
                                 </p>
                                 <p className="font-medium text-sm text-purple-500 group-hover/link:underline truncate">
                                   {contactData.website}
@@ -791,7 +792,7 @@ const ContactDetails = () => {
                               </div>
                               <div>
                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                  Status
+                                  {t("status")}
                                 </p>
                                 <p className="font-medium text-sm text-foreground capitalize">
                                   {contactData.status}
@@ -809,7 +810,7 @@ const ContactDetails = () => {
                                 </div>
                                 <div>
                                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                    Lead Score
+                                    {t("lead_score")}
                                   </p>
                                   <p className="font-medium text-sm text-foreground">
                                     {contactData.leadScore}
@@ -826,7 +827,7 @@ const ContactDetails = () => {
                               </div>
                               <div>
                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                  Last Interaction
+                                  {t("last_interaction")}
                                 </p>
                                 <p className="font-medium text-sm text-foreground">
                                   {new Date(
@@ -851,7 +852,7 @@ const ContactDetails = () => {
                         <div className="flex items-center gap-2 mb-4">
                           <FileText className="h-4 w-4 text-primary" />
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            Notes
+                            {t("notes")}
                           </p>
                           {contactData?.contactNotes &&
                             contactData.contactNotes.length > 0 && (
@@ -973,7 +974,7 @@ const ContactDetails = () => {
                           <div className="flex flex-col items-center justify-center py-8 text-center">
                             <FileText className="w-10 h-10 text-muted-foreground/50 mb-2" />
                             <p className="text-xs text-muted-foreground">
-                              No notes available for this contact
+                              {t("no_notes_available")}
                             </p>
                           </div>
                         )}
@@ -986,7 +987,7 @@ const ContactDetails = () => {
                       <div className="p-4 rounded-lg border border-border/20 bg-card">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Clock className="h-4 w-4" />
-                          <span className="text-xs font-medium">Created:</span>
+                          <span className="text-xs font-medium">{t("created")}</span>
                           <span className="text-xs text-foreground">
                             {new Date(
                               contactData?.created_at ||
@@ -1013,10 +1014,10 @@ const ContactDetails = () => {
                     <User className="w-6 h-6 text-primary/60" />
                   </div>
                   <h3 className="text-sm font-semibold text-foreground mb-1">
-                    Select a contact
+                    {t("select_a_contact")}
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Choose from the list to view details
+                    {t("choose_from_list")}
                   </p>
                 </div>
               </div>
