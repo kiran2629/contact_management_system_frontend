@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { Link, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,7 +8,6 @@ import { LayoutRouter } from "@/components/layout/LayoutRouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MultiSelect } from "@/components/form/MultiSelect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   useGetContactsQuery,
@@ -34,6 +33,14 @@ import {
   Filter,
   User,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // All available categories
 const ALL_CATEGORIES = [
@@ -52,7 +59,7 @@ const Contacts = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { canAccess, hasCategory } = usePermissions();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(id || null);
 
   const { data: contacts = [], isLoading, error } = useGetContactsQuery();
@@ -65,6 +72,51 @@ const Contacts = () => {
   const [deleteContactMutation, { isLoading: isDeleting }] =
     useDeleteContactMutation();
 
+  // Enhanced search function that searches across multiple fields
+  const searchInContact = useCallback((contact: any, query: string): boolean => {
+    if (!query || query.trim() === "") return true;
+    
+    const searchTerm = query.toLowerCase().trim();
+    
+    // Search in name
+    if (contact.name?.toLowerCase().includes(searchTerm)) return true;
+    
+    // Search in company
+    if (contact.company?.toLowerCase().includes(searchTerm)) return true;
+    
+    // Search in email
+    if (contact.email?.toLowerCase().includes(searchTerm)) return true;
+    
+    // Search in phone
+    if (contact.phone?.toLowerCase().includes(searchTerm)) return true;
+    
+    // Search in position
+    if (contact.position?.toLowerCase().includes(searchTerm)) return true;
+    
+    // Search in address
+    if (contact.address?.toLowerCase().includes(searchTerm)) return true;
+    
+    // Search in LinkedIn URL
+    if (contact.linkedinUrl?.toLowerCase().includes(searchTerm)) return true;
+    
+    // Search in tags
+    if (contact.tags?.some((tag: string) => tag.toLowerCase().includes(searchTerm))) return true;
+    
+    // Search in categories
+    if (contact.categories?.some((cat: string) => cat.toLowerCase().includes(searchTerm))) return true;
+    
+    // Search in notes
+    if (contact.notes?.toLowerCase().includes(searchTerm)) return true;
+    
+    // Search in all emails array
+    if (contact.emails?.some((e: any) => e.email?.toLowerCase().includes(searchTerm))) return true;
+    
+    // Search in all phones array
+    if (contact.phones?.some((p: any) => p.number?.toLowerCase().includes(searchTerm))) return true;
+    
+    return false;
+  }, []);
+
   const filteredContacts = useMemo(() => {
     // If user is Admin, show all contacts (backend already filters for non-Admins)
     const isAdmin = user?.role === "Admin";
@@ -74,19 +126,18 @@ const Contacts = () => {
       const hasAllowedCategory = isAdmin || contact.categories.some((cat) =>
         hasCategory(cat)
       );
-      const matchesSearch =
-        contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        contact.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        contact.email.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Enhanced search across multiple fields - use searchQuery directly for real-time filtering
+      const matchesSearch = searchInContact(contact, searchQuery);
 
-      // Filter by selected categories (if any are selected)
+      // Filter by selected category (if any is selected)
       const matchesCategory =
-        selectedCategories.length === 0 ||
-        contact.categories.some((cat) => selectedCategories.includes(cat));
+        !selectedCategory ||
+        contact.categories.some((cat) => cat === selectedCategory);
 
       return hasAllowedCategory && matchesSearch && matchesCategory;
     });
-  }, [contacts, searchQuery, selectedCategories, hasCategory, user?.role]);
+  }, [contacts, searchQuery, selectedCategory, hasCategory, user?.role, searchInContact]);
 
   const handleDelete = async () => {
     if (!selectedContact || !selectedId) return;
@@ -102,11 +153,19 @@ const Contacts = () => {
 
   const handleClearFilters = () => {
     setSearchQuery("");
-    setSelectedCategories([]);
+    setSelectedCategory(null);
   };
 
-  const hasActiveFilters =
-    searchQuery.length > 0 || selectedCategories.length > 0;
+  const handleCategorySelect = (category: string) => {
+    // If clicking the same category, deselect it
+    if (selectedCategory === category) {
+      setSelectedCategory(null);
+    } else {
+      setSelectedCategory(category);
+    }
+  };
+
+  const hasActiveFilters = searchQuery.length > 0 || selectedCategory !== null;
 
   return (
     <LayoutRouter>
@@ -126,9 +185,62 @@ const Contacts = () => {
                     Contacts
                   </h1>
                   <p className="text-xs text-muted-foreground">
-                    {filteredContacts.length} total
+                    {filteredContacts.length} of {contacts.length} contacts
                   </p>
                 </div>
+                <div className="flex items-center gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-lg"
+                      >
+                        <Filter className="w-4 h-4 mr-1" />
+                        {selectedCategory ? selectedCategory : "Filter"}
+                        {selectedCategory && (
+                          <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                            1
+                          </Badge>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => setSelectedCategory(null)}
+                        className={!selectedCategory ? "bg-accent" : ""}
+                      >
+                        All Categories
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {ALL_CATEGORIES.map((category) => (
+                        <DropdownMenuItem
+                          key={category}
+                          onClick={() => handleCategorySelect(category)}
+                          className={selectedCategory === category ? "bg-accent font-medium" : ""}
+                        >
+                          {category}
+                          {selectedCategory === category && (
+                            <span className="ml-auto text-primary">✓</span>
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                      {selectedCategory && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={handleClearFilters}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <X className="w-4 h-4 mr-2" />
+                            Clear Filter
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 {canAccess("contact", "create") && (
                   <Link to="/contacts/new">
                     <Button
@@ -140,18 +252,59 @@ const Contacts = () => {
                     </Button>
                   </Link>
                 )}
+                </div>
               </div>
 
-              {/* Search */}
+              {/* Simple Search Input - Filters contact cards directly */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
                 <Input
-                  placeholder="Search..."
-                  className="pl-9 h-9 bg-background/50 border-border/50"
+                  placeholder="Search contacts (name, company, email, phone...)"
+                  className="pl-9 pr-10 h-9 bg-background/50 border-border/50 focus:ring-2 focus:ring-primary/20"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-destructive/10"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
+              
+              {/* Search Results Info */}
+              {searchQuery.trim().length >= 1 && (
+                <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
+                  <Search className="h-3 w-3" />
+                  <span>
+                    Found <span className="font-semibold text-foreground">{filteredContacts.length}</span> {filteredContacts.length === 1 ? 'contact' : 'contacts'}
+                    {filteredContacts.length !== contacts.length && (
+                      <span className="ml-1 text-primary">matching "{searchQuery}"</span>
+                    )}
+                  </span>
+                </div>
+              )}
+              
+              {/* Active Filter Badge */}
+              {selectedCategory && (
+                <div className="mt-2 flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs">
+                    Category: {selectedCategory}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedCategory(null)}
+                    className="h-5 px-2 text-xs"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+              </div>
+              )}
             </div>
 
             {/* Cards Grid */}
@@ -171,7 +324,7 @@ const Contacts = () => {
                       whileHover={{ y: -4, scale: 1.02 }}
                       className={`relative rounded-xl border-2 p-4 transition-all cursor-pointer ${
                         selectedId === String(contact.id)
-                          ? "border-primary bg-gradient-to-br from-primary/10 to-secondary/10 shadow-lg"
+                          ? "border-primary/50 bg-card/50 shadow-md"
                           : "border-border/30 bg-card hover:border-primary/50 hover:shadow-md"
                       }`}
                     >

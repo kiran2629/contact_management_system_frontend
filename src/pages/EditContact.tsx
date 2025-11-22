@@ -129,7 +129,9 @@ const EditContact = () => {
         linkedin: existingContact.social_links?.linkedin || '',
         twitter: existingContact.social_links?.twitter || '',
         website: existingContact.social_links?.website || '',
-        notes: existingContact.notes || '',
+        notes: Array.isArray(existingContact.notes) 
+          ? existingContact.notes.join('') 
+          : (existingContact.notes || ''),
         profileImage: profilePhotoUrl,
       };
 
@@ -174,7 +176,9 @@ const EditContact = () => {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Ensure value is always a string, not an array
+    const stringValue = Array.isArray(value) ? value.join('') : String(value);
+    setFormData(prev => ({ ...prev, [field]: stringValue }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -686,7 +690,7 @@ const EditContact = () => {
                   </Label>
                   <Textarea
                     id="notes"
-                    value={formData.notes}
+                    value={Array.isArray(formData.notes) ? formData.notes.join('') : String(formData.notes || '')}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
                     placeholder="Add any additional notes about this contact..."
                     className="min-h-[100px] resize-none"

@@ -35,6 +35,21 @@ interface BackendContact {
 }
 
 // Frontend Contact interface (transformed from backend)
+export interface Note {
+  _id: string;
+  contactId: string;
+  userId: {
+    _id: string;
+    userName: string;
+    email: string;
+    role: string;
+  };
+  note: string;
+  sentiment: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Contact {
   id: string;
   name: string;
@@ -47,6 +62,7 @@ export interface Contact {
   linkedinUrl?: string;
   address?: string;
   notes?: string;
+  contactNotes?: Note[]; // Notes array from API
   tags?: string[];
   created_at: string;
   created_by: string;
@@ -213,15 +229,39 @@ export const contactsApi = createApi({
     }),
     getContactById: builder.query<Contact, string>({
       query: (id) => `/v1/api/contacts/${id}`,
-      transformResponse: (response: any) => {
-        // Handle backend response structure: { success: true, data: {...} }
+      transformResponse: (response: any, meta, arg) => {
+        console.log('getContactById - Raw Response:', response);
+        console.log('getContactById - Response Type:', typeof response);
+        console.log('getContactById - Response Keys:', response ? Object.keys(response) : 'null');
+        
+        // Handle backend response structure: { success: true, data: { contact: {...}, notes: [...] } }
         if (response && response.success && response.data) {
-          return transformContact(response.data);
+          // Check if contact is nested in data.contact
+          const contactData = response.data.contact || response.data;
+          const notes = response.data.notes || [];
+          
+          if (contactData && (contactData._id || contactData.id)) {
+            const transformed = transformContact(contactData);
+            // Add notes to the transformed contact
+            transformed.contactNotes = notes;
+            console.log('getContactById - Transformed Contact:', transformed);
+            console.log('getContactById - Notes:', notes);
+            return transformed;
+          }
         }
         // Fallback: if data is directly the contact object
         if (response && response._id) {
-          return transformContact(response);
+          const transformed = transformContact(response);
+          console.log('getContactById - Transformed Contact (direct):', transformed);
+          return transformed;
         }
+        // Handle empty response (304 Not Modified - browser uses cache)
+        if (!response || (typeof response === 'object' && Object.keys(response).length === 0)) {
+          console.warn('getContactById - Empty response, might be 304 Not Modified');
+          // Return undefined to trigger refetch or use cached data
+          throw new Error("Empty response - contact data not available");
+        }
+        console.error('getContactById - Unexpected response structure:', response);
         throw new Error("Contact not found");
       },
       providesTags: (result, error, id) => [{ type: "Contacts", id }],
@@ -307,8 +347,8 @@ export const contactsApi = createApi({
         // Otherwise, send as JSON
         return {
           url: endpoint,
-          method: "PUT",
-          body: data,
+        method: "PUT",
+        body: data,
         };
       },
       transformResponse: (response: any) => {
@@ -327,11 +367,34 @@ export const contactsApi = createApi({
         "Contacts",
       ],
     }),
-    deleteContact: builder.mutation<{ success: boolean }, string>({
-      query: (id) => ({
-        url: `/v1/api/contacts/${id}`,
-        method: "DELETE",
-      }),
+    deleteContact: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (id) => {
+        const endpoint = `/v1/api/contacts/${id}`;
+        console.log('DELETE API Call:', { 
+          endpoint, 
+          method: 'DELETE',
+          fullUrl: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${endpoint}`,
+          note: 'Authorization Bearer token will be added automatically by baseQuery'
+        });
+        return {
+          url: endpoint,
+          method: "DELETE",
+        };
+      },
+      transformResponse: (response: any) => {
+        // Handle backend response structure: { success: true, message: "..." }
+        if (response && response.success) {
+          return {
+            success: response.success,
+            message: response.message || 'Contact deleted successfully'
+          };
+        }
+        // Fallback: if response is directly success boolean
+        if (typeof response === 'boolean') {
+          return { success: response, message: 'Contact deleted successfully' };
+        }
+        return { success: true, message: 'Contact deleted successfully' };
+      },
       invalidatesTags: ["Contacts"],
     }),
   }),
