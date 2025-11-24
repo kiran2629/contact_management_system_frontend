@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { Link, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -61,6 +61,7 @@ const Contacts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(id || null);
+  const [showRelatedOnly, setShowRelatedOnly] = useState(false);
 
   const { data: contacts = [], isLoading, error } = useGetContactsQuery();
   const { data: selectedContact } = useGetContactByIdQuery(
@@ -71,6 +72,19 @@ const Contacts = () => {
   );
   const [deleteContactMutation, { isLoading: isDeleting }] =
     useDeleteContactMutation();
+
+  // Update selectedId when URL param changes or on mount
+  useEffect(() => {
+    if (id) {
+      setSelectedId(id);
+      setShowRelatedOnly(true); // Automatically show related contacts when contact is selected via URL
+    } else {
+      // Reset when navigating to /contacts without an id (e.g., from Dashboard)
+      // This ensures the contact list is visible
+      setSelectedId(null);
+      setShowRelatedOnly(false);
+    }
+  }, [id]);
 
   // Enhanced search function that searches across multiple fields
   const searchInContact = useCallback((contact: any, query: string): boolean => {
@@ -135,9 +149,22 @@ const Contacts = () => {
         !selectedCategory ||
         contact.categories.some((cat) => cat === selectedCategory);
 
-      return hasAllowedCategory && matchesSearch && matchesCategory;
+      // Filter by related contacts if a contact is selected and showRelatedOnly is true
+      let matchesRelated = true;
+      if (showRelatedOnly && selectedContact && selectedId) {
+        // Show related contacts: same company OR shared categories
+        const sameCompany = contact.company?.toLowerCase() === selectedContact.company?.toLowerCase();
+        const sharedCategories = contact.categories.some((cat) =>
+          selectedContact.categories.includes(cat)
+        );
+        // Exclude the selected contact itself
+        const isNotSelected = String(contact.id) !== String(selectedId);
+        matchesRelated = isNotSelected && (sameCompany || sharedCategories);
+      }
+
+      return hasAllowedCategory && matchesSearch && matchesCategory && matchesRelated;
     });
-  }, [contacts, searchQuery, selectedCategory, hasCategory, user?.role, searchInContact]);
+  }, [contacts, searchQuery, selectedCategory, hasCategory, user?.role, searchInContact, showRelatedOnly, selectedContact, selectedId]);
 
   const handleDelete = async () => {
     if (!selectedContact || !selectedId) return;
@@ -182,13 +209,27 @@ const Contacts = () => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h1 className="text-2xl font-bold text-gradient-shine">
-                    Contacts
+                    {showRelatedOnly && selectedContact ? "Related Contacts" : "Contacts"}
                   </h1>
                   <p className="text-xs text-muted-foreground">
                     {filteredContacts.length} of {contacts.length} contacts
+                    {showRelatedOnly && selectedContact && (
+                      <span className="ml-1 text-primary">(related to {selectedContact.name})</span>
+                    )}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {selectedId && selectedContact && (
+                    <Button
+                      variant={showRelatedOnly ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowRelatedOnly(!showRelatedOnly)}
+                      className="rounded-lg"
+                    >
+                      <User className="w-4 h-4 mr-1" />
+                      {showRelatedOnly ? "All Contacts" : "Related Only"}
+                    </Button>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -315,93 +356,94 @@ const Contacts = () => {
                 </div>
               ) : filteredContacts.length > 0 ? (
                 <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredContacts.map((contact, index) => (
-                    <motion.div
-                      key={contact.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      whileHover={{ y: -4, scale: 1.02 }}
-                      className={`relative rounded-xl border-2 p-4 transition-all cursor-pointer ${
-                        selectedId === String(contact.id)
-                          ? "border-primary/50 bg-card/50 shadow-md"
-                          : "border-border/30 bg-card hover:border-primary/50 hover:shadow-md"
-                      }`}
-                    >
-                      {/* Card Content */}
-                      <div className="flex flex-col gap-3">
-                        {/* Avatar & Name */}
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-12 h-12 border-2 border-primary/30 shrink-0">
-                            {contact.profile_photo ? (
-                              <AvatarImage 
-                                src={contact.profile_photo.startsWith('http') 
-                                  ? contact.profile_photo 
-                                  : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${contact.profile_photo}`} 
-                                alt={contact.name}
-                                className="object-cover"
-                              />
-                            ) : null}
-                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-lg font-bold">
-                              {contact.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-base truncate">
-                              {contact.name}
-                            </h3>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {contact.company}
-                            </p>
+                    {filteredContacts.map((contact, index) => (
+                      <motion.div
+                        key={contact.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        whileHover={{ y: -4, scale: 1.02 }}
+                        className={`relative rounded-xl border-2 p-4 transition-all cursor-pointer ${
+                          selectedId === String(contact.id)
+                            ? "border-primary/50 bg-card/50 shadow-md"
+                            : "border-border/30 bg-card hover:border-primary/50 hover:shadow-md"
+                        }`}
+                      >
+                        {/* Card Content */}
+                        <div className="flex flex-col gap-3">
+                          {/* Avatar & Name */}
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-12 h-12 border-2 border-primary/30 shrink-0">
+                              {contact.profile_photo ? (
+                                <AvatarImage 
+                                  src={contact.profile_photo.startsWith('http') 
+                                    ? contact.profile_photo 
+                                    : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${contact.profile_photo}`} 
+                                  alt={contact.name}
+                                  className="object-cover"
+                                />
+                              ) : null}
+                              <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-lg font-bold">
+                                {contact.name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-base truncate">
+                                {contact.name}
+                              </h3>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {contact.company}
+                              </p>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Email & Phone */}
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Mail className="w-3 h-3" />
-                            <span className="truncate">{contact.email}</span>
+                          {/* Email & Phone */}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Mail className="w-3 h-3" />
+                              <span className="truncate">{contact.email}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Phone className="w-3 h-3" />
+                              <span>{contact.phone}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Phone className="w-3 h-3" />
-                            <span>{contact.phone}</span>
+
+                          {/* Categories */}
+                          <div className="flex flex-wrap gap-1">
+                            {contact.categories.slice(0, 3).map((cat) => (
+                              <Badge
+                                key={cat}
+                                variant="secondary"
+                                className="text-[10px] px-2 py-0.5 h-5"
+                              >
+                                {cat}
+                              </Badge>
+                            ))}
+                            {contact.categories.length > 3 && (
+                              <Badge variant="outline" className="text-[10px] px-2 py-0.5 h-5">
+                                +{contact.categories.length - 3}
+                              </Badge>
+                            )}
                           </div>
-                        </div>
 
-                        {/* Categories */}
-                        <div className="flex flex-wrap gap-1">
-                          {contact.categories.slice(0, 3).map((cat) => (
-                            <Badge
-                              key={cat}
-                              variant="secondary"
-                              className="text-[10px] px-2 py-0.5 h-5"
-                            >
-                              {cat}
-                            </Badge>
-                          ))}
-                          {contact.categories.length > 3 && (
-                            <Badge variant="outline" className="text-[10px] px-2 py-0.5 h-5">
-                              +{contact.categories.length - 3}
-                            </Badge>
-                          )}
+                          {/* View Button */}
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedId(String(contact.id));
+                              setShowRelatedOnly(true); // Automatically show related contacts
+                            }}
+                            className="w-full mt-2 bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90"
+                          >
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            View
+                          </Button>
                         </div>
-
-                        {/* View Button */}
-                        <Button
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedId(String(contact.id));
-                          }}
-                          className="w-full mt-2 bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90"
-                        >
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          View
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                      </motion.div>
+                    ))}
+                  </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-64">
                   <Sparkles className="w-12 h-12 text-muted-foreground/50 mb-2" />
@@ -431,7 +473,10 @@ const Contacts = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setSelectedId(null)}
+                      onClick={() => {
+                        setSelectedId(null);
+                        setShowRelatedOnly(false);
+                      }}
                       className="md:hidden h-7"
                     >
                       <ArrowLeft className="w-3 h-3 mr-1" />
@@ -464,7 +509,10 @@ const Contacts = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setSelectedId(null)}
+                        onClick={() => {
+                          setSelectedId(null);
+                          setShowRelatedOnly(false);
+                        }}
                         className="hidden md:flex h-7 w-7 p-0"
                       >
                         <X className="w-3 h-3" />

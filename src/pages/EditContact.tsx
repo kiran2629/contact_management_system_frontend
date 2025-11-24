@@ -63,7 +63,7 @@ const EditContact = () => {
     linkedin: '',
     twitter: '',
     website: '',
-    notes: '',
+    notes: [] as Array<{ _id?: string; note: string }>,
     profileImage: null as string | null,
   });
 
@@ -129,9 +129,12 @@ const EditContact = () => {
         linkedin: existingContact.social_links?.linkedin || '',
         twitter: existingContact.social_links?.twitter || '',
         website: existingContact.social_links?.website || '',
-        notes: Array.isArray(existingContact.notes) 
-          ? existingContact.notes.join('') 
-          : (existingContact.notes || ''),
+        notes: existingContact.contactNotes && Array.isArray(existingContact.contactNotes) && existingContact.contactNotes.length > 0
+          ? existingContact.contactNotes.map((note: any) => ({
+              _id: note._id,
+              note: note.note || note.content || note.text || ''
+            }))
+          : [],
         profileImage: profilePhotoUrl,
       };
 
@@ -262,14 +265,22 @@ const EditContact = () => {
       if (formData.twitter.trim()) social_links.twitter = formData.twitter.trim();
       if (formData.website.trim()) social_links.website = formData.website.trim();
 
-      // Prepare notes - if it's a string, convert to array for backend
-      let notesArray: string[] = [];
-      if (formData.notes && formData.notes.trim()) {
-        // If notes is a string, create a new note
-        notesArray = [formData.notes.trim()];
+      // Prepare notes - send array with _id for updates or new strings for new notes
+      let notesArray: Array<{ _id?: string; note: string } | string> = [];
+      if (formData.notes && Array.isArray(formData.notes) && formData.notes.length > 0) {
+        notesArray = formData.notes
+          .filter(note => note.note && note.note.trim())
+          .map(note => {
+            // If note has _id, send as object for update
+            if (note._id) {
+              return { _id: note._id, note: note.note.trim() };
+            }
+            // Otherwise, send as string for new note
+            return note.note.trim();
+          });
       }
 
-      const payload: Partial<CreateContactInput> = {
+      const payload: Partial<CreateContactInput & { notes: any }> = {
         name: formData.name.trim(),
         emails,
         phones,
@@ -690,18 +701,65 @@ const EditContact = () => {
                 </div>
 
                 {/* Notes */}
-                <div className="space-y-2">
-                  <Label htmlFor="notes" className="flex items-center gap-2">
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     Notes
                   </Label>
-                  <Textarea
-                    id="notes"
-                    value={Array.isArray(formData.notes) ? formData.notes.join('') : String(formData.notes || '')}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder="Add any additional notes about this contact..."
-                    className="min-h-[100px] resize-none"
-                  />
+                  <div className="space-y-3">
+                    {formData.notes.length === 0 ? (
+                      <div className="text-center py-4 text-sm text-muted-foreground">
+                        No notes yet. Click "Add New Note" to add one.
+                      </div>
+                    ) : (
+                      formData.notes.map((note, index) => (
+                        <div key={note._id || index} className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {note._id ? 'Existing Note' : 'New Note'}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const updatedNotes = formData.notes.filter((_, i) => i !== index);
+                                setFormData({ ...formData, notes: updatedNotes });
+                              }}
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <Textarea
+                            value={note.note}
+                            onChange={(e) => {
+                              const updatedNotes = [...formData.notes];
+                              updatedNotes[index] = { ...note, note: e.target.value };
+                              setFormData({ ...formData, notes: updatedNotes });
+                            }}
+                            placeholder="Enter note text..."
+                            className="min-h-[80px] resize-none"
+                          />
+                        </div>
+                      ))
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          notes: [...formData.notes, { note: '' }]
+                        });
+                      }}
+                      className="w-full"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Add New Note
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Tags */}

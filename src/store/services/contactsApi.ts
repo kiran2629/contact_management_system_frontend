@@ -282,11 +282,23 @@ export const contactsApi = createApi({
         method: "POST",
         body: contact,
       }),
-      transformResponse: (response: { success: boolean; data: BackendContact }) => {
+      transformResponse: (response: { success: boolean; data: BackendContact; message?: string }) => {
         if (response.success && response.data) {
           return transformContact(response.data);
         }
-        throw new Error("Failed to create contact");
+        // If response has a message, include it in the error
+        const errorMessage = response.message || "Failed to create contact";
+        throw new Error(errorMessage);
+      },
+      transformErrorResponse: (response: any) => {
+        // Extract error message from backend response
+        return {
+          status: response.status,
+          data: {
+            message: response.data?.message || response.data?.error || "Failed to create contact",
+            error: response.data?.error || response.data?.message,
+          },
+        };
       },
       invalidatesTags: ["Contacts"],
     }),

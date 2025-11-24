@@ -68,41 +68,14 @@ const CATEGORIES = [
 
 // Zod validation schema
 const addContactSchema = z.object({
-  name: z.string().min(3, "Name must be at least 3 characters"),
+  name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits"),
-  company: z.string().min(2, "Company must be at least 2 characters"),
+  phone: z.string().min(1, "Phone is required"),
+  company: z.string().min(1, "Company is required"),
   categories: z.array(z.string()).min(1, "Please select at least one category"),
-  birthday: z
-    .date({
-      required_error: "Birthday is required",
-      invalid_type_error: "Please select a valid date",
-    })
-    .refine(
-      (date) => {
-        const today = new Date();
-        const age = today.getFullYear() - date.getFullYear();
-        const monthDiff = today.getMonth() - date.getMonth();
-        if (
-          monthDiff < 0 ||
-          (monthDiff === 0 && today.getDate() < date.getDate())
-        ) {
-          return age - 1 >= 14;
-        }
-        return age >= 14;
-      },
-      { message: "User must be at least 14 years old" }
-    )
-    .refine((date) => date <= new Date(), {
-      message: "Birthday must be a past date",
-    }),
-  linkedinUrl: z
-    .string()
-    .url("Invalid URL")
-    .refine((url) => url.startsWith("https://www.linkedin.com/"), {
-      message: "LinkedIn URL must start with https://www.linkedin.com/",
-    }),
-  address: z.string().min(5, "Address must be at least 5 characters"),
+  birthday: z.date().optional(),
+  linkedinUrl: z.string().optional().or(z.literal("")),
+  address: z.string().optional().or(z.literal("")),
   tags: z.array(z.string()).optional().default([]),
   notes: z.string().optional().default(""),
 });
@@ -159,22 +132,27 @@ const AddContact = () => {
 
   const onSubmit = async (data: AddContactForm) => {
     try {
+      // Ensure categories is not empty (default to Public if empty)
+      const categories = data.categories && data.categories.length > 0 
+        ? data.categories 
+        : ['Public'];
+
       // Transform data to match backend format
       const formattedData: CreateContactInput = {
-        name: data.name,
-        emails: [{ email: data.email, type: "work", is_primary: true }],
-        phones: [{ number: data.phone, type: "mobile", is_primary: true }],
-        company: data.company,
-        categories: data.categories,
+        name: data.name.trim(),
+        emails: [{ email: data.email.trim(), type: "work", is_primary: true }],
+        phones: [{ number: data.phone.trim(), type: "mobile", is_primary: true }],
+        company: data.company.trim(),
+        categories: categories,
         tags: data.tags || [],
-        notes: data.notes || "",
+        notes: data.notes && data.notes.trim() ? data.notes.trim() : undefined,
         social_links: {
-          linkedin: data.linkedinUrl || undefined,
+          linkedin: data.linkedinUrl && data.linkedinUrl.trim() ? data.linkedinUrl.trim() : undefined,
         },
       };
 
       // Add address if provided
-      if (data.address) {
+      if (data.address && data.address.trim()) {
         // Parse address string into components (simple parsing)
         const addressParts = data.address.split(",").map(part => part.trim());
         formattedData.addresses = [{
@@ -183,7 +161,7 @@ const AddContact = () => {
           city: addressParts[1] || "",
           state: addressParts[2] || "",
           postal_code: addressParts[3] || "",
-          country: "USA",
+          country: addressParts[4] || "USA",
           is_primary: true,
         }];
       }
@@ -216,13 +194,22 @@ const AddContact = () => {
       navigate("/contacts");
     } catch (error: any) {
       console.error("Contact operation error:", error);
-      toast.error(
-        error?.data?.message ||
-          error?.data?.error ||
-          `Failed to ${
-            isEditMode ? "update" : "create"
-          } contact. Please try again.`
-      );
+      console.error("Error details:", {
+        status: error?.status,
+        data: error?.data,
+        message: error?.message,
+        originalStatus: error?.originalStatus,
+      });
+      
+      // Extract error message from various possible locations
+      const errorMessage = 
+        error?.data?.message || 
+        error?.data?.error || 
+        error?.message ||
+        (error?.data?.data && typeof error.data.data === 'string' ? error.data.data : null) ||
+        `Failed to ${isEditMode ? "update" : "create"} contact. Please try again.`;
+      
+      toast.error(errorMessage);
     }
   };
 
@@ -451,7 +438,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
                               <Calendar className="h-4 w-4 text-accent" />
                             </div>
-                            Birthday <span className="text-destructive">*</span>
+                            Birthday
                           </FormLabel>
                           <FormControl>
                             <Controller
@@ -482,8 +469,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
                               <Linkedin className="h-4 w-4 text-blue-500" />
                             </div>
-                            LinkedIn URL{" "}
-                            <span className="text-destructive">*</span>
+                            LinkedIn URL
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -507,7 +493,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
                               <MapPin className="h-4 w-4 text-secondary" />
                             </div>
-                            Address <span className="text-destructive">*</span>
+                            Address
                           </FormLabel>
                           <FormControl>
                             <Textarea
