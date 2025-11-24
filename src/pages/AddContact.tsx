@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import * as z from "zod";
 import { RootState } from "@/store/store";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   useCreateContactMutation,
   useUpdateContactMutation,
@@ -53,6 +54,7 @@ import {
   Edit3,
   FileText,
 } from "lucide-react";
+import { useTranslation } from "@/ai-features/localization/useTranslation";
 
 // Categories list
 const CATEGORIES = [
@@ -66,28 +68,67 @@ const CATEGORIES = [
   "Other",
 ];
 
-// Zod validation schema
+// Zod validation schema with comprehensive field validations
 const addContactSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(3, "Name must be at least 3 characters"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().min(1, "Phone is required"),
-  company: z.string().min(1, "Company is required"),
+  phone: z.string().regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits"),
+  company: z.string().min(2, "Company must be at least 2 characters"),
   categories: z.array(z.string()).min(1, "Please select at least one category"),
-  birthday: z.date().optional(),
-  linkedinUrl: z.string().optional().or(z.literal("")),
-  address: z.string().optional().or(z.literal("")),
+  birthday: z
+    .date({
+      required_error: "Birthday is required",
+      invalid_type_error: "Please select a valid date",
+    })
+    .refine(
+      (date) => {
+        const today = new Date();
+        const age = today.getFullYear() - date.getFullYear();
+        const monthDiff = today.getMonth() - date.getMonth();
+        if (
+          monthDiff < 0 ||
+          (monthDiff === 0 && today.getDate() < date.getDate())
+        ) {
+          return age - 1 >= 14;
+        }
+        return age >= 14;
+      },
+      { message: "User must be at least 14 years old" }
+    )
+    .refine((date) => date <= new Date(), {
+      message: "Birthday must be a past date",
+    }),
+  linkedinUrl: z
+    .string()
+    .url("Invalid URL")
+    .refine((url) => url.startsWith("https://www.linkedin.com/"), {
+      message: "LinkedIn URL must start with https://www.linkedin.com/",
+    }),
+  address: z.string().min(5, "Address must be at least 5 characters"),
   tags: z.array(z.string()).optional().default([]),
-  notes: z.string().optional().default(""),
+  notes: z
+    .string()
+    .optional()
+    .default("")
+    .refine(
+      (notes) => {
+        if (!notes) return true;
+        return notes.length <= 5000;
+      },
+      { message: "Notes must be less than 5000 characters" }
+    ),
 });
 
 type AddContactForm = z.infer<typeof addContactSchema>;
 
 const AddContact = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const { contacts } = useSelector((state: RootState) => state.contacts);
+  const { canAccess, canCreate, canViewBirthdays } = usePermissions();
   const [createContact, { isLoading: isCreating }] = useCreateContactMutation();
   const [updateContactMutation, { isLoading: isUpdating }] =
     useUpdateContactMutation();
@@ -98,6 +139,8 @@ const AddContact = () => {
 
   const form = useForm<AddContactForm>({
     resolver: zodResolver(addContactSchema),
+    mode: "onBlur", // Validate on blur for inline errors
+    reValidateMode: "onBlur", // Re-validate on blur after first submission
     defaultValues: {
       name: "",
       email: "",
@@ -121,7 +164,9 @@ const AddContact = () => {
         phone: existingContact.phone,
         company: existingContact.company,
         categories: existingContact.categories,
-        birthday: existingContact.birthday ? parseISO(existingContact.birthday) : undefined,
+        birthday: existingContact.birthday
+          ? parseISO(existingContact.birthday)
+          : undefined,
         linkedinUrl: existingContact.linkedinUrl || "",
         address: existingContact.address || "",
         tags: existingContact.tags || [],
@@ -131,6 +176,23 @@ const AddContact = () => {
   }, [existingContact, form]);
 
   const onSubmit = async (data: AddContactForm) => {
+    // Check permissions before submission
+    if (isEditMode) {
+      // Check update permission for edit mode
+      if (!canAccess("contact", "update") && user?.role !== "Admin") {
+        toast.error("You don't have permission to update contacts");
+        navigate("/contacts");
+        return;
+      }
+    } else {
+      // Check create permission for new contact
+      if (!canCreate("contact") && user?.role !== "Admin") {
+        toast.error("You don't have permission to create contacts");
+        navigate("/contacts");
+        return;
+      }
+    }
+
     try {
       // Ensure categories is not empty (default to Public if empty)
       const categories = data.categories && data.categories.length > 0 
@@ -161,7 +223,7 @@ const AddContact = () => {
           city: addressParts[1] || "",
           state: addressParts[2] || "",
           postal_code: addressParts[3] || "",
-          country: addressParts[4] || "USA",
+          country: "USA",
           is_primary: true,
         }];
       }
@@ -253,12 +315,12 @@ const AddContact = () => {
 
             <div>
               <h1 className="text-4xl font-black text-gradient-shine">
-                {isEditMode ? "Edit Contact" : "Create New Contact"}
+                {isEditMode ? t("edit_contact_info") : t("create_new_contact")}
               </h1>
               <p className="text-muted-foreground text-lg font-medium mt-1">
                 {isEditMode
-                  ? "Update contact information in your CRM"
-                  : "Add a new contact to your professional network"}
+                  ? t("update_contact_info")
+                  : t("add_contact_to_network")}
               </p>
             </div>
           </div>
@@ -277,10 +339,10 @@ const AddContact = () => {
             <CardHeader className="border-b-2 border-border/20 pb-6 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5">
               <CardTitle className="text-2xl font-bold flex items-center gap-2">
                 <User className="h-6 w-6 text-primary" />
-                Contact Information
+                {t("contact_information")}
               </CardTitle>
               <CardDescription className="text-base">
-                Fill in all required fields marked with{" "}
+                {t("fill_required_fields")}{" "}
                 <span className="text-destructive font-bold">*</span>
               </CardDescription>
             </CardHeader>
@@ -303,7 +365,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                               <User className="h-4 w-4 text-primary" />
                             </div>
-                            Name <span className="text-destructive">*</span>
+                            {t("name")} <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -327,7 +389,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
                               <Mail className="h-4 w-4 text-secondary" />
                             </div>
-                            Email <span className="text-destructive">*</span>
+                            {t("email")} <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -352,7 +414,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
                               <Phone className="h-4 w-4 text-accent" />
                             </div>
-                            Phone <span className="text-destructive">*</span>
+                            {t("phone")} <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -382,7 +444,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                               <Building2 className="h-4 w-4 text-primary" />
                             </div>
-                            Company <span className="text-destructive">*</span>
+                            {t("company")} <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -406,7 +468,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
                               <Tags className="h-4 w-4 text-secondary" />
                             </div>
-                            Categories{" "}
+                            {t("categories")}{" "}
                             <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
@@ -438,7 +500,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
                               <Calendar className="h-4 w-4 text-accent" />
                             </div>
-                            Birthday
+                            Birthday <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Controller
@@ -469,7 +531,8 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
                               <Linkedin className="h-4 w-4 text-blue-500" />
                             </div>
-                            LinkedIn URL
+                            LinkedIn URL{" "}
+                            <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -493,7 +556,7 @@ const AddContact = () => {
                             <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
                               <MapPin className="h-4 w-4 text-secondary" />
                             </div>
-                            Address
+                            Address <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Textarea
@@ -515,7 +578,7 @@ const AddContact = () => {
                         <FormItem className="md:col-span-2">
                           <FormLabel className="flex items-center gap-2">
                             <Tags className="h-4 w-4" />
-                            Tags
+                            {t("tags")}
                           </FormLabel>
                           <FormControl>
                             <Controller
@@ -548,7 +611,7 @@ const AddContact = () => {
                         onClick={() => navigate("/contacts")}
                         className="w-full sm:w-auto glass-card border-2 px-8 py-6 text-base font-semibold rounded-xl"
                       >
-                        Cancel
+                        {t("cancel")}
                       </Button>
                     </motion.div>
 
@@ -568,13 +631,13 @@ const AddContact = () => {
                           <>
                             <ButtonLoader size={20} />
                             <span className="ml-2">
-                              {isEditMode ? "Updating..." : "Saving..."}
+                              {isEditMode ? t("updating") : t("saving")}
                             </span>
                           </>
                         ) : (
                           <>
                             <Save className="mr-2 h-5 w-5" />
-                            {isEditMode ? "Update Contact" : "Save Contact"}
+                            {isEditMode ? t("update_contact") : t("save_contact")}
                           </>
                         )}
                       </Button>

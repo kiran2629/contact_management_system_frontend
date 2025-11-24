@@ -38,6 +38,19 @@ export interface DashboardResponse {
   recentContacts: DashboardContact[];
 }
 
+// Category Percentage types
+export interface CategoryStat {
+  category: string;
+  count: number;
+  percentage: number;
+}
+
+export interface CategoryPercentageResponse {
+  status: string;
+  total_contacts: number;
+  categories: CategoryStat[];
+}
+
 export const dashboardApi = createApi({
   reducerPath: "dashboardApi",
   baseQuery,
@@ -45,25 +58,47 @@ export const dashboardApi = createApi({
   endpoints: (builder) => ({
     getDashboard: builder.query<DashboardResponse, void>({
       query: () => "/v1/api/user/dashboard",
-      transformResponse: (response: ApiDashboardResponse): DashboardResponse => {
+      transformResponse: (
+        response: ApiDashboardResponse
+      ): DashboardResponse => {
         // Transform API response to match our interface
         return {
           totalContacts: response.data?.totalContacts ?? 0,
           totalUsers: response.data?.totalUsers ?? 0,
           recentActivities: response.data?.recentActivities ?? 0,
           weekActivities: response.data?.weekActivities ?? 0,
-          recentContacts: (response.data?.recentContacts ?? []).map((contact) => ({
-            id: contact._id,
-            name: contact.name,
-            company: contact.company,
-            created_at: contact.createdAt,
-          })),
+          recentContacts: (response.data?.recentContacts ?? []).map(
+            (contact) => ({
+              id: contact._id,
+              name: contact.name,
+              company: contact.company,
+              created_at: contact.createdAt,
+            })
+          ),
         };
+      },
+      providesTags: ["Dashboard"],
+    }),
+    getCategoryPercentage: builder.query<CategoryPercentageResponse, void>({
+      queryFn: async () => {
+        try {
+          const response = await fetch(
+            "https://crmpythonapi.onrender.com/contacts/category-percentage/",
+            {
+              method: "GET",
+              credentials: "include",
+            }
+          );
+          const data = await response.json();
+          return { data };
+        } catch (error: any) {
+          return { error: { status: "FETCH_ERROR", error: error.message } };
+        }
       },
       providesTags: ["Dashboard"],
     }),
   }),
 });
 
-export const { useGetDashboardQuery } = dashboardApi;
-
+export const { useGetDashboardQuery, useGetCategoryPercentageQuery } =
+  dashboardApi;

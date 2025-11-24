@@ -12,6 +12,11 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PremiumLoader } from "@/components/loaders/PremiumLoader";
 import { useGetSignedUserQuery } from "@/store/services/authApi";
 
+// AI Features
+import { I18nProvider } from "@/ai-features/localization/i18nProvider";
+import { AssistantButton } from "@/ai-features/ai-assistant/AssistantButton";
+import { VoiceButton } from "@/ai-features/voice/VoiceButton";
+
 // Lazy load pages
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -109,6 +114,15 @@ const AppContent = () => {
   return (
     <Suspense fallback={<PremiumLoader />}>
       {isAuthenticated && <PermissionLoader />}
+      
+      {/* AI Features - Only show when logged in */}
+      {isAuthenticated && (
+        <>
+          <AssistantButton />
+          <VoiceButton />
+        </>
+      )}
+      
       <Routes>
         <Route
           path="/login"
@@ -212,13 +226,15 @@ const AppContent = () => {
 
 const App = () => (
   <Provider store={store}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
-    </TooltipProvider>
+    <I18nProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </TooltipProvider>
+    </I18nProvider>
   </Provider>
 );
 

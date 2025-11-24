@@ -25,8 +25,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/ai-features/localization/useTranslation";
 
 export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
+  const { t } = useTranslation();
   const location = useLocation();
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -46,12 +48,12 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-    { icon: Users, label: "Contacts", path: "/contacts" },
-    { icon: Activity, label: "Activity", path: "/activity-logs" },
-    { icon: Settings, label: "Settings", path: "/settings" },
+    { icon: LayoutDashboard, label: t("dashboard"), path: "/dashboard" },
+    { icon: Users, label: t("contacts"), path: "/contacts" },
+    { icon: Activity, label: t("activity_logs"), path: "/activity-logs" },
+    { icon: Settings, label: t("settings"), path: "/settings" },
     ...(user?.role === "Admin"
-      ? [{ icon: Users, label: "User Management", path: "/admin/users" }]
+      ? [{ icon: Users, label: t("admin_users"), path: "/admin/users" }]
       : []),
   ];
 
@@ -333,26 +335,6 @@ export const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
             <Badge className="bg-primary/10 text-primary border-primary/30 hidden md:flex">
               {user?.role}
             </Badge>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleThemeToggle}
-              className="rounded-lg h-9 w-9 hidden md:flex"
-            >
-              {mode === "light" ? (
-                <Moon className="h-4 w-4" />
-              ) : (
-                <Sun className="h-4 w-4" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="rounded-lg h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10 hidden md:flex"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
             <Link to="/profile" className="hidden md:block">
               <Avatar className="h-9 w-9 border-2 border-primary/30 cursor-pointer hover:scale-105 transition-transform">
                 <AvatarImage

@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Moon, Sun, Layout, Check, Sparkles } from 'lucide-react';
+import { LanguageSelector } from '@/ai-features/localization/LanguageSelector';
  
 const Settings = () => {
   const dispatch = useDispatch();
@@ -62,14 +63,14 @@ const Settings = () => {
     <LayoutRouter>
       <div className="space-y-6 w-full">
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Appearance */}
+          {/* Appearance & Language */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="lg:col-span-1"
+            className="lg:col-span-1 space-y-6"
           >
-            <Card className="border border-border/20 h-full">
+            <Card className="border border-border/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   {mode === 'light' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -90,6 +91,17 @@ const Settings = () => {
                     onCheckedChange={() => dispatch(toggleTheme())}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Language Selection */}
+            <Card className="border border-border/20">
+              <CardHeader>
+                <CardTitle>Language</CardTitle>
+                <CardDescription>AI-powered translations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LanguageSelector />
               </CardContent>
             </Card>
           </motion.div>

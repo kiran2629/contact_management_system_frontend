@@ -118,7 +118,7 @@ export interface CreateContactInput {
   addresses?: Address[];
   social_links?: SocialLinks;
   tags?: string[];
-  notes?: string;
+  notes?: string | Array<{ _id?: string; note: string }>;
   profile_photo?: string;
   status?: string;
   leadScore?: number;
@@ -128,57 +128,80 @@ export interface CreateContactInput {
 // Helper function to transform backend contact to frontend format
 const transformContact = (backendContact: any): Contact => {
   // Handle both new format (emails/phones arrays) and old format (direct email/phone fields)
-  let primaryEmail = '';
-  if (backendContact.emails && Array.isArray(backendContact.emails) && backendContact.emails.length > 0) {
-    primaryEmail = backendContact.emails.find((e: any) => e.is_primary)?.email || backendContact.emails[0]?.email || '';
+  let primaryEmail = "";
+  if (
+    backendContact.emails &&
+    Array.isArray(backendContact.emails) &&
+    backendContact.emails.length > 0
+  ) {
+    primaryEmail =
+      backendContact.emails.find((e: any) => e.is_primary)?.email ||
+      backendContact.emails[0]?.email ||
+      "";
   } else if (backendContact.email) {
     primaryEmail = backendContact.email;
   }
 
-  let primaryPhone = '';
-  if (backendContact.phones && Array.isArray(backendContact.phones) && backendContact.phones.length > 0) {
-    primaryPhone = backendContact.phones.find((p: any) => p.is_primary)?.number || backendContact.phones[0]?.number || '';
+  let primaryPhone = "";
+  if (
+    backendContact.phones &&
+    Array.isArray(backendContact.phones) &&
+    backendContact.phones.length > 0
+  ) {
+    primaryPhone =
+      backendContact.phones.find((p: any) => p.is_primary)?.number ||
+      backendContact.phones[0]?.number ||
+      "";
   } else if (backendContact.phone) {
     primaryPhone = backendContact.phone;
   }
 
   // Handle address - can be from addresses array or direct address field
-  let address = '';
-  const primaryAddress = backendContact.addresses?.find((a: any) => a.is_primary) || backendContact.addresses?.[0];
+  let address = "";
+  const primaryAddress =
+    backendContact.addresses?.find((a: any) => a.is_primary) ||
+    backendContact.addresses?.[0];
   if (primaryAddress) {
-    address = `${primaryAddress.street || ''}, ${primaryAddress.city || ''}, ${primaryAddress.state || ''} ${primaryAddress.postal_code || ''}`.trim();
+    address = `${primaryAddress.street || ""}, ${primaryAddress.city || ""}, ${
+      primaryAddress.state || ""
+    } ${primaryAddress.postal_code || ""}`.trim();
   } else if (backendContact.address) {
     address = backendContact.address;
   }
 
   // Handle LinkedIn URL - can be from social_links or direct linkedin field
-  const linkedinUrl = backendContact.social_links?.linkedin || backendContact.linkedin || '';
+  const linkedinUrl =
+    backendContact.social_links?.linkedin || backendContact.linkedin || "";
 
   // Handle created_by - can be object or string
-  const created_by = typeof backendContact.created_by === 'object' 
-    ? (backendContact.created_by?._id || backendContact.created_by)
-    : (backendContact.created_by || backendContact.createdBy || '');
+  const created_by =
+    typeof backendContact.created_by === "object"
+      ? backendContact.created_by?._id || backendContact.created_by
+      : backendContact.created_by || backendContact.createdBy || "";
 
   // Handle categories - normalize to array and capitalize first letter
   let categories: string[] = [];
   if (Array.isArray(backendContact.categories)) {
-    categories = backendContact.categories.map((cat: string) => 
-      cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase()
+    categories = backendContact.categories.map(
+      (cat: string) => cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase()
     );
   } else if (backendContact.categories) {
     categories = [backendContact.categories];
   }
 
   // Handle created_at - can be created_at or createdAt
-  const created_at = backendContact.created_at || backendContact.createdAt || new Date().toISOString();
+  const created_at =
+    backendContact.created_at ||
+    backendContact.createdAt ||
+    new Date().toISOString();
   const updated_at = backendContact.updated_at || backendContact.updatedAt;
 
   return {
     id: backendContact._id,
-    name: backendContact.name || '',
+    name: backendContact.name || "",
     email: primaryEmail,
     phone: primaryPhone,
-    company: backendContact.company || '',
+    company: backendContact.company || "",
     categories: categories,
     address,
     linkedinUrl,
@@ -188,14 +211,26 @@ const transformContact = (backendContact: any): Contact => {
     created_by: String(created_by),
     updated_at,
     // Keep backend fields for edit operations
-    emails: backendContact.emails && Array.isArray(backendContact.emails) && backendContact.emails.length > 0 
-      ? backendContact.emails 
-      : (primaryEmail ? [{ email: primaryEmail, type: 'work', is_primary: true }] : []),
-    phones: backendContact.phones && Array.isArray(backendContact.phones) && backendContact.phones.length > 0 
-      ? backendContact.phones 
-      : (primaryPhone ? [{ number: primaryPhone, type: 'mobile', is_primary: true }] : []),
+    emails:
+      backendContact.emails &&
+      Array.isArray(backendContact.emails) &&
+      backendContact.emails.length > 0
+        ? backendContact.emails
+        : primaryEmail
+        ? [{ email: primaryEmail, type: "work", is_primary: true }]
+        : [],
+    phones:
+      backendContact.phones &&
+      Array.isArray(backendContact.phones) &&
+      backendContact.phones.length > 0
+        ? backendContact.phones
+        : primaryPhone
+        ? [{ number: primaryPhone, type: "mobile", is_primary: true }]
+        : [],
     addresses: backendContact.addresses || [],
-    social_links: backendContact.social_links || (backendContact.linkedin ? { linkedin: backendContact.linkedin } : {}),
+    social_links:
+      backendContact.social_links ||
+      (backendContact.linkedin ? { linkedin: backendContact.linkedin } : {}),
     profile_photo: backendContact.profile_photo,
     status: backendContact.status,
     leadScore: backendContact.leadScore,
@@ -230,45 +265,92 @@ export const contactsApi = createApi({
     getContactById: builder.query<Contact, string>({
       query: (id) => `/v1/api/contacts/${id}`,
       transformResponse: (response: any, meta, arg) => {
-        console.log('getContactById - Raw Response:', response);
-        console.log('getContactById - Response Type:', typeof response);
-        console.log('getContactById - Response Keys:', response ? Object.keys(response) : 'null');
-        
-        // Handle backend response structure: { success: true, data: { contact: {...}, notes: [...] } }
-        if (response && response.success && response.data) {
-          // Check if contact is nested in data.contact
-          const contactData = response.data.contact || response.data;
-          const notes = response.data.notes || [];
-          
-          if (contactData && (contactData._id || contactData.id)) {
-            const transformed = transformContact(contactData);
-            // Add notes to the transformed contact
-            transformed.contactNotes = notes;
-            console.log('getContactById - Transformed Contact:', transformed);
-            console.log('getContactById - Notes:', notes);
-            return transformed;
-          }
+        console.log("getContactById - Raw Response:", response);
+        console.log("getContactById - Response Type:", typeof response);
+        console.log(
+          "getContactById - Response Keys:",
+          response ? Object.keys(response) : "null"
+        );
+
+        // Handle backend response structure: { contact: {...}, notes: [...] }
+        // OR { success: true, data: { contact: {...}, notes: [...] } }
+        let contactData: any = null;
+        let notes: any[] = [];
+
+        // Check for new structure: { contact: {...}, notes: [...] }
+        if (response && response.contact) {
+          contactData = response.contact;
+          notes = Array.isArray(response.notes) ? response.notes : [];
+          console.log("getContactById - Found contact and notes at root level");
         }
-        // Fallback: if data is directly the contact object
-        if (response && response._id) {
-          const transformed = transformContact(response);
-          console.log('getContactById - Transformed Contact (direct):', transformed);
+        // Check for nested structure: { success: true, data: { contact: {...}, notes: [...] } }
+        else if (response && response.success && response.data) {
+          contactData = response.data.contact || response.data;
+          notes = Array.isArray(response.data.notes) ? response.data.notes : [];
+          console.log(
+            "getContactById - Found nested structure with success flag"
+          );
+        }
+        // Check for direct contact object with notes at root
+        else if (response && (response._id || response.id)) {
+          contactData = response;
+          notes = Array.isArray(response.notes) ? response.notes : [];
+          console.log("getContactById - Found direct contact object");
+        }
+
+        if (contactData && (contactData._id || contactData.id)) {
+          const transformed = transformContact(contactData);
+          // Ensure notes array is properly formatted and add to transformed contact
+          transformed.contactNotes = notes.map((note: any) => ({
+            _id: note._id,
+            contactId: note.contactId,
+            userId: note.userId || note.user || { userName: "Unknown" },
+            note: note.note || note.content || note.text || "",
+            sentiment: note.sentiment || "neutral",
+            createdAt:
+              note.createdAt || note.created_at || new Date().toISOString(),
+            updatedAt:
+              note.updatedAt ||
+              note.updated_at ||
+              note.createdAt ||
+              note.created_at ||
+              new Date().toISOString(),
+          }));
+          console.log("getContactById - Transformed Contact:", transformed);
+          console.log(
+            "getContactById - Notes count:",
+            transformed.contactNotes.length
+          );
+          console.log("getContactById - Notes:", transformed.contactNotes);
           return transformed;
         }
+
         // Handle empty response (304 Not Modified - browser uses cache)
-        if (!response || (typeof response === 'object' && Object.keys(response).length === 0)) {
-          console.warn('getContactById - Empty response, might be 304 Not Modified');
+        if (
+          !response ||
+          (typeof response === "object" && Object.keys(response).length === 0)
+        ) {
+          console.warn(
+            "getContactById - Empty response, might be 304 Not Modified"
+          );
           // Return undefined to trigger refetch or use cached data
           throw new Error("Empty response - contact data not available");
         }
-        console.error('getContactById - Unexpected response structure:', response);
+        console.error(
+          "getContactById - Unexpected response structure:",
+          response
+        );
         throw new Error("Contact not found");
       },
       providesTags: (result, error, id) => [{ type: "Contacts", id }],
     }),
     searchContacts: builder.query<Contact[], string>({
-      query: (query) => `/v1/api/contacts/search?q=${encodeURIComponent(query)}`,
-      transformResponse: (response: { success: boolean; data: BackendContact[] }) => {
+      query: (query) =>
+        `/v1/api/contacts/search?q=${encodeURIComponent(query)}`,
+      transformResponse: (response: {
+        success: boolean;
+        data: BackendContact[];
+      }) => {
         if (response.success && Array.isArray(response.data)) {
           return response.data.map(transformContact);
         }
@@ -302,65 +384,96 @@ export const contactsApi = createApi({
       },
       invalidatesTags: ["Contacts"],
     }),
-    updateContact: builder.mutation<Contact, { id: string; data: Partial<CreateContactInput>; profileImageFile?: File | null }>({
+    updateContact: builder.mutation<
+      Contact,
+      {
+        id: string;
+        data: Partial<CreateContactInput>;
+        profileImageFile?: File | null;
+      }
+    >({
       query: ({ id, data, profileImageFile }) => {
         const endpoint = `/v1/api/contacts/${id}`;
-        console.log('PUT API Call:', { endpoint, method: 'PUT', hasFile: !!profileImageFile, data });
-        
+        console.log("PUT API Call:", {
+          endpoint,
+          method: "PUT",
+          hasFile: !!profileImageFile,
+          data,
+        });
+
         // If there's a file to upload, use FormData
         if (profileImageFile) {
           const formData = new FormData();
-          
+
           // For complex nested structures, stringify them as JSON
           // This ensures the backend can parse them correctly
           if (data.emails) {
-            formData.append('emails', JSON.stringify(data.emails));
+            formData.append("emails", JSON.stringify(data.emails));
           }
           if (data.phones) {
-            formData.append('phones', JSON.stringify(data.phones));
+            formData.append("phones", JSON.stringify(data.phones));
           }
           if (data.addresses) {
-            formData.append('addresses', JSON.stringify(data.addresses));
+            formData.append("addresses", JSON.stringify(data.addresses));
           }
           if (data.social_links) {
-            formData.append('social_links', JSON.stringify(data.social_links));
+            formData.append("social_links", JSON.stringify(data.social_links));
           }
           if (data.categories) {
             // For simple arrays, append each item
             data.categories.forEach((cat) => {
-              formData.append('categories[]', cat);
+              formData.append("categories[]", cat);
             });
           }
           if (data.tags) {
             data.tags.forEach((tag) => {
-              formData.append('tags[]', tag);
+              formData.append("tags[]", tag);
             });
           }
-          
+
           // Add simple fields
-          if (data.name) formData.append('name', data.name);
-          if (data.company) formData.append('company', data.company);
-          if (data.status) formData.append('status', data.status);
-          if (data.notes) formData.append('notes', data.notes);
-          if (data.leadScore !== undefined) formData.append('leadScore', String(data.leadScore));
-          if (data.lastInteraction) formData.append('lastInteraction', data.lastInteraction);
-          if (data.profile_photo) formData.append('profile_photo', data.profile_photo);
-          
+          if (data.name) formData.append("name", data.name);
+          if (data.company) formData.append("company", data.company);
+          if (data.status) formData.append("status", data.status);
+          // Handle notes - can be string or array of note objects
+          if (data.notes) {
+            if (Array.isArray(data.notes)) {
+              // If notes is an array, append each note with its _id if present
+              data.notes.forEach((note, index) => {
+                if (typeof note === "object" && note.note) {
+                  formData.append(`notes[${index}].note`, note.note);
+                  if (note._id) {
+                    formData.append(`notes[${index}]._id`, note._id);
+                  }
+                }
+              });
+            } else {
+              // If notes is a string, append as single field
+              formData.append("notes", String(data.notes));
+            }
+          }
+          if (data.leadScore !== undefined)
+            formData.append("leadScore", String(data.leadScore));
+          if (data.lastInteraction)
+            formData.append("lastInteraction", data.lastInteraction);
+          if (data.profile_photo)
+            formData.append("profile_photo", data.profile_photo);
+
           // Add the file
-          formData.append('profile_photo', profileImageFile);
-          
+          formData.append("profile_photo", profileImageFile);
+
           return {
             url: endpoint,
             method: "PUT",
             body: formData,
           };
         }
-        
+
         // Otherwise, send as JSON
         return {
           url: endpoint,
-        method: "PUT",
-        body: data,
+          method: "PUT",
+          body: data,
         };
       },
       transformResponse: (response: any) => {
@@ -379,14 +492,19 @@ export const contactsApi = createApi({
         "Contacts",
       ],
     }),
-    deleteContact: builder.mutation<{ success: boolean; message: string }, string>({
+    deleteContact: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
       query: (id) => {
         const endpoint = `/v1/api/contacts/${id}`;
-        console.log('DELETE API Call:', { 
-          endpoint, 
-          method: 'DELETE',
-          fullUrl: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${endpoint}`,
-          note: 'Authorization Bearer token will be added automatically by baseQuery'
+        console.log("DELETE API Call:", {
+          endpoint,
+          method: "DELETE",
+          fullUrl: `${
+            import.meta.env.VITE_API_URL || "http://localhost:5000"
+          }${endpoint}`,
+          note: "Authorization Bearer token will be added automatically by baseQuery",
         });
         return {
           url: endpoint,
@@ -398,14 +516,14 @@ export const contactsApi = createApi({
         if (response && response.success) {
           return {
             success: response.success,
-            message: response.message || 'Contact deleted successfully'
+            message: response.message || "Contact deleted successfully",
           };
         }
         // Fallback: if response is directly success boolean
-        if (typeof response === 'boolean') {
-          return { success: response, message: 'Contact deleted successfully' };
+        if (typeof response === "boolean") {
+          return { success: response, message: "Contact deleted successfully" };
         }
-        return { success: true, message: 'Contact deleted successfully' };
+        return { success: true, message: "Contact deleted successfully" };
       },
       invalidatesTags: ["Contacts"],
     }),

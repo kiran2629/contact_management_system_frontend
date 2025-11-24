@@ -20,6 +20,7 @@ import {
   useLoginMutation,
   useGetSignedUserQuery,
 } from "@/store/services/authApi";
+import { useTranslation } from "@/ai-features/localization/useTranslation";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -29,6 +30,7 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 const Login = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { mode } = useSelector((state: RootState) => state.theme);
@@ -326,10 +328,10 @@ const Login = () => {
               className="space-y-4 text-center"
             >
               <h1 className="text-5xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-                Contact Management
+                {t("contact_management")}
               </h1>
               <p className="text-xl text-purple-100">
-                Streamline your business relationships
+                {t("streamline_your_business")}
               </p>
             </motion.div>
 
@@ -341,9 +343,9 @@ const Login = () => {
               className="grid grid-cols-3 gap-6 pt-8"
             >
               {[
-                { icon: Building2, text: "Secure" },
-                { icon: Lock, text: "Fast" },
-                { icon: User, text: "Modern" },
+                { icon: Building2, text: t("secure") },
+                { icon: Lock, text: t("fast") },
+                { icon: User, text: t("modern") },
               ].map((feature, index) => (
                 <motion.div
                   key={feature.text}
@@ -390,10 +392,10 @@ const Login = () => {
                     <Building2 className="h-8 w-8 text-white" />
                   </motion.div>
                   <h2 className="text-3xl font-bold text-white">
-                    Welcome Back
+                    {t("welcome_back")}
                   </h2>
                   <p className="mt-2 text-purple-200">
-                    Sign in to access your dashboard
+                    {t("sign_in_to_dashboard")}
                   </p>
                 </motion.div>
 
@@ -407,14 +409,14 @@ const Login = () => {
                     className="space-y-2"
                   >
                     <Label htmlFor="email" className="text-white">
-                      Email
+                      {t("email")}
                     </Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-5 w-5 text-purple-300" />
                       <Input
                         id="email"
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder={t("enter_your_email")}
                         className="border-white/20 bg-white/10 pl-10 text-white placeholder:text-purple-200 focus:border-purple-400 focus:ring-purple-400"
                         {...register("email")}
                       />
@@ -438,14 +440,14 @@ const Login = () => {
                     className="space-y-2"
                   >
                     <Label htmlFor="password" className="text-white">
-                      Password
+                      {t("password")}
                     </Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-5 w-5 text-purple-300" />
                       <Input
                         id="password"
                         type="password"
-                        placeholder="Enter your password"
+                        placeholder={t("enter_your_password")}
                         className="border-white/20 bg-white/10 pl-10 text-white placeholder:text-purple-200 focus:border-purple-400 focus:ring-purple-400"
                         {...register("password")}
                       />
@@ -477,10 +479,10 @@ const Login = () => {
                       {isLoading ? (
                         <>
                           <ButtonLoader size={16} />
-                          <span className="ml-2">Signing in...</span>
+                          <span className="ml-2">{t("signing_in")}</span>
                         </>
                       ) : (
-                        "Sign In"
+                        t("sign_in")
                       )}
                     </Button>
                   </motion.div>
@@ -495,7 +497,7 @@ const Login = () => {
               transition={{ delay: 0.9 }}
               className="mt-4 text-center text-sm text-purple-200"
             >
-              Secure role-based authentication system
+              {t("secure_authentication")}
             </motion.p>
           </motion.div>
         </motion.div>
